@@ -102,7 +102,7 @@ const Documents = () => {
     };
 
     loadData();
-  }, [dispatch, workspaceId, allDocuments]);
+  }, [dispatch, workspaceId]);
 
   const onCreate = async () => {
     // Validación más flexible cuando estamos en un workspace

@@ -486,8 +486,8 @@ const DocumentEditor = () => {
         // Si venimos de un workspace, volver al workspace
         navigate(`/spaces/${workspaceId}`);
       } else {
-        // Si no, volver a la lista de documentos
-        navigate('/documents');
+        // Si no, volver a inicio
+        navigate('/');
       }
     } else {
       // Si es un documento existente, solo cancelar edición
