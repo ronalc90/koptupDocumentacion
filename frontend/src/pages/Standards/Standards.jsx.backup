@@ -1,0 +1,362 @@
+import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import standardsService from '../../services/standardsService';
+import {
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Alert,
+  Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '@mui/material';
+import {
+  ExpandMore,
+  Description,
+  Code,
+  Star,
+} from '@mui/icons-material';
+import { toast } from 'react-toastify';
+
+const Standards = () => {
+  const [tab, setTab] = useState(0);
+  const [standards, setStandards] = useState([]);
+  const [examples, setExamples] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useSelector((s) => s.auth);
+
+  // Category labels
+  const CATEGORIES = {
+    USE_CASE: { label: 'Casos de Uso', icon: '📋', color: '#667eea' },
+    UML_DIAGRAM: { label: 'Diagramas UML', icon: '🔷', color: '#f093fb' },
+    API_REST: { label: 'APIs REST', icon: '🌐', color: '#48c6ef' },
+    DATABASE: { label: 'Base de Datos', icon: '🗄️', color: '#a8edea' },
+    ARCHITECTURE: { label: 'Arquitectura', icon: '🏗️', color: '#fbc2eb' },
+    USER_MANUAL: { label: 'Manual de Usuario', icon: '📖', color: '#ffecd2' },
+    TECHNICAL_SPEC: { label: 'Especificación Técnica', icon: '📐', color: '#c2e9fb' },
+    TEST_PLAN: { label: 'Plan de Pruebas', icon: '🧪', color: '#ffdde1' },
+    DEPLOYMENT: { label: 'Despliegue', icon: '🚀', color: '#d299c2' },
+    OTHER: { label: 'Otro', icon: '📄', color: '#999' },
+  };
+
+  const fetchStandards = async () => {
+    try {
+      setLoading(true);
+      const response = await standardsService.getStandards();
+      setStandards(response.results || response);
+    } catch (error) {
+      console.error('Error fetching standards:', error);
+      toast.error('No se pudieron cargar los estándares');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchExamples = async () => {
+    try {
+      setLoading(true);
+      const response = await standardsService.getExamples();
+      setExamples(response.results || response);
+    } catch (error) {
+      console.error('Error fetching examples:', error);
+      toast.error('No se pudieron cargar los ejemplos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStandards();
+  }, []);
+
+  useEffect(() => {
+    if (tab === 1) {
+      fetchExamples();
+    }
+  }, [tab]);
+
+  // Group examples by standard
+  const examplesByStandard = examples.reduce((acc, example) => {
+    const standardId = example.standard;
+    if (!acc[standardId]) acc[standardId] = [];
+    acc[standardId].push(example);
+    return acc;
+  }, {});
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+        Estándares de Documentación IA
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Sistema de generación de documentación con IA basado en biblioteca de ejemplos
+      </Typography>
+
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Tab label="Estándares" />
+        <Tab label="Ejemplos" />
+        <Tab label="Probar con IA" />
+      </Tabs>
+
+      {/* Tab 0: Standards */}
+      {tab === 0 && (
+        <Box>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress />
+            </Box>
+          ) : standards.length === 0 ? (
+            <Alert severity="info">
+              No hay estándares creados aún. Crea estándares desde el Django Admin.
+            </Alert>
+          ) : (
+            <Grid container spacing={3}>
+              {standards.map((standard) => {
+                const catInfo = CATEGORIES[standard.category] || CATEGORIES.OTHER;
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={standard.id}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        '&:hover': {
+                          boxShadow: 3,
+                          transform: 'translateY(-2px)',
+                          transition: 'all 0.2s',
+                        },
+                      }}
+                    >
+                      <CardContent>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="h4" sx={{ mr: 1 }}>
+                            {standard.icon || catInfo.icon}
+                          </Typography>
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                              {standard.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {catInfo.label}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          {standard.description}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                          <Chip
+                            label={`${standard.examples_count || 0} ejemplos`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                          {standard.requires_diagram && (
+                            <Chip
+                              label={standard.diagram_type}
+                              size="small"
+                              color="secondary"
+                              icon={<Code />}
+                            />
+                          )}
+                          {standard.is_active ? (
+                            <Chip label="Activo" size="small" color="success" />
+                          ) : (
+                            <Chip label="Inactivo" size="small" />
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </Box>
+      )}
+
+      {/* Tab 1: Examples */}
+      {tab === 1 && (
+        <Box>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress />
+            </Box>
+          ) : examples.length === 0 ? (
+            <Alert severity="info">
+              No hay ejemplos creados aún. Crea ejemplos desde el Django Admin.
+            </Alert>
+          ) : (
+            <Box>
+              {standards.map((standard) => {
+                const standardExamples = examplesByStandard[standard.id] || [];
+                if (standardExamples.length === 0) return null;
+
+                const catInfo = CATEGORIES[standard.category] || CATEGORIES.OTHER;
+
+                return (
+                  <Accordion key={standard.id} defaultExpanded={standards.length === 1}>
+                    <AccordionSummary expandIcon={<ExpandMore />}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                        <Typography variant="h5">
+                          {standard.icon || catInfo.icon}
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {standard.name}
+                        </Typography>
+                        <Chip
+                          label={`${standardExamples.length} ejemplos`}
+                          size="small"
+                          color="primary"
+                          sx={{ ml: 'auto' }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        {standardExamples.map((example) => (
+                          <Grid item xs={12} key={example.id}>
+                            <Card variant="outlined">
+                              <CardContent>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                    {example.title}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    {example.is_featured && (
+                                      <Chip
+                                        label="Destacado"
+                                        size="small"
+                                        color="warning"
+                                        icon={<Star />}
+                                      />
+                                    )}
+                                    <Chip
+                                      label={example.complexity_level}
+                                      size="small"
+                                      color={
+                                        example.complexity_level === 'SIMPLE'
+                                          ? 'success'
+                                          : example.complexity_level === 'COMPLEX'
+                                          ? 'error'
+                                          : 'default'
+                                      }
+                                    />
+                                  </Box>
+                                </Box>
+
+                                <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f7fa', borderRadius: 1 }}>
+                                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                                    📝 Input (Prompt del usuario):
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                                    "{example.input_prompt}"
+                                  </Typography>
+                                </Box>
+
+                                <Box sx={{ mb: 1 }}>
+                                  <Typography variant="subtitle2" color="success.main" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Description fontSize="small" />
+                                    Output (Documentación generada):
+                                  </Typography>
+                                  <Box
+                                    sx={{
+                                      maxHeight: 200,
+                                      overflow: 'auto',
+                                      p: 2,
+                                      backgroundColor: '#fff',
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      borderRadius: 1,
+                                      fontSize: '0.875rem',
+                                      fontFamily: 'monospace',
+                                      whiteSpace: 'pre-wrap',
+                                    }}
+                                  >
+                                    {example.generated_content}
+                                  </Box>
+                                </Box>
+
+                                {example.diagram_code && (
+                                  <Box>
+                                    <Typography variant="subtitle2" color="secondary.main" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Code fontSize="small" />
+                                      Diagrama:
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        maxHeight: 150,
+                                        overflow: 'auto',
+                                        p: 2,
+                                        backgroundColor: '#263238',
+                                        color: '#aed581',
+                                        borderRadius: 1,
+                                        fontSize: '0.75rem',
+                                        fontFamily: 'monospace',
+                                        whiteSpace: 'pre',
+                                      }}
+                                    >
+                                      {example.diagram_code}
+                                    </Box>
+                                  </Box>
+                                )}
+
+                                {example.tags && (
+                                  <Box sx={{ display: 'flex', gap: 0.5, mt: 2, flexWrap: 'wrap' }}>
+                                    {example.tags.split(',').map((tag, idx) => (
+                                      <Chip key={idx} label={tag.trim()} size="small" variant="outlined" />
+                                    ))}
+                                  </Box>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Tab 2: AI Testing */}
+      {tab === 2 && (
+        <Box>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Función de prueba de IA próximamente
+            </Typography>
+            <Typography variant="body2">
+              Aquí podrás seleccionar un estándar, escribir un prompt, y ver cómo la IA genera documentación basándose en los ejemplos. También podrás calificar la calidad de la generación.
+            </Typography>
+          </Alert>
+
+          {/* TODO: Implement AI testing interface */}
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              Interfaz de prueba con IA en desarrollo
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Pronto podrás generar documentación con IA directamente desde aquí
+            </Typography>
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+export default Standards;

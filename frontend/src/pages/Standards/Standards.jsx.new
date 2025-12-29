@@ -1,0 +1,5 @@
+// Archivo temporal para verificar
+console.log('Standards page loading...');
+export default function Standards() {
+  return <div>Loading Standards...</div>;
+}
