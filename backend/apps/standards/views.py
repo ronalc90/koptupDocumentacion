@@ -288,6 +288,195 @@ class ProjectDocumentationGenerationView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class AIChatView(APIView):
+    """
+    API View para chat conversacional con IA.
+
+    Endpoint:
+    - POST /api/v1/standards/chat/
+
+    Input:
+    {
+        "message": "¿Cómo puedo crear una documentación de API REST?",
+        "conversation_history": [
+            {"role": "user", "content": "Hola"},
+            {"role": "assistant", "content": "Hola, ¿en qué puedo ayudarte?"}
+        ]
+    }
+
+    Output:
+    {
+        "success": true,
+        "response": "Para crear documentación de API REST...",
+        "suggestions": ["Ver ejemplos", "Generar documentación"]
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Procesa un mensaje de chat y genera una respuesta con IA.
+        """
+        message = request.data.get('message', '')
+        conversation_history = request.data.get('conversation_history', [])
+
+        if not message:
+            return Response({
+                'success': False,
+                'error': 'El campo "message" es requerido'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            import os
+            api_key = os.getenv('OPENAI_API_KEY')
+
+            if api_key:
+                try:
+                    from openai import OpenAI
+                    client = OpenAI(api_key=api_key)
+
+                    # Construir mensajes incluyendo el historial
+                    messages = [
+                        {
+                            "role": "system",
+                            "content": """Eres un asistente experto en documentación técnica y gestión documental.
+Ayudas a los usuarios a:
+- Crear documentación técnica profesional
+- Generar diagramas Mermaid para visualizar procesos
+- Organizar y estructurar contenido
+- Responder preguntas sobre mejores prácticas de documentación
+
+Características:
+- Responde de forma clara y concisa
+- Ofrece sugerencias prácticas
+- Puedes generar diagramas cuando sea útil
+- Sugiere tipos de documentación relevantes"""
+                        }
+                    ]
+
+                    # Agregar historial de conversación
+                    for msg in conversation_history[-10:]:  # Últimos 10 mensajes
+                        messages.append({
+                            "role": msg.get('role', 'user'),
+                            "content": msg.get('content', '')
+                        })
+
+                    # Agregar mensaje actual
+                    messages.append({
+                        "role": "user",
+                        "content": message
+                    })
+
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=messages,
+                        temperature=0.7,
+                        max_tokens=1000
+                    )
+
+                    ai_response = response.choices[0].message.content
+
+                    # Generar sugerencias inteligentes basadas en el contexto
+                    suggestions = self._generate_suggestions(message, ai_response)
+
+                    return Response({
+                        'success': True,
+                        'response': ai_response,
+                        'suggestions': suggestions
+                    }, status=status.HTTP_200_OK)
+
+                except Exception as e:
+                    print(f"Error usando OpenAI: {e}")
+                    # Fallback a respuesta mock
+                    return self._mock_chat_response(message)
+            else:
+                return self._mock_chat_response(message)
+
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _generate_suggestions(self, user_message: str, ai_response: str) -> list:
+        """Genera sugerencias contextuales para el usuario."""
+        suggestions = []
+
+        lower_message = user_message.lower()
+
+        # Sugerencias basadas en palabras clave
+        if any(word in lower_message for word in ['diagrama', 'diagram', 'visualizar', 'flujo']):
+            suggestions.append('Generar diagrama')
+
+        if any(word in lower_message for word in ['documento', 'documentación', 'crear', 'nuevo']):
+            suggestions.append('Ver plantillas disponibles')
+
+        if any(word in lower_message for word in ['api', 'rest', 'endpoint']):
+            suggestions.append('Documentación de API')
+
+        if any(word in lower_message for word in ['base de datos', 'database', 'modelo']):
+            suggestions.append('Diagrama de entidades')
+
+        # Sugerencias generales si no hay específicas
+        if not suggestions:
+            suggestions = [
+                'Generar documentación',
+                'Crear diagrama',
+                'Ver ejemplos'
+            ]
+
+        return suggestions[:3]  # Máximo 3 sugerencias
+
+    def _mock_chat_response(self, message: str) -> Response:
+        """Respuesta mock cuando no hay API key."""
+        lower_message = message.lower()
+
+        # Respuestas predefinidas según palabras clave
+        if any(word in lower_message for word in ['hola', 'hey', 'buenos', 'buenas']):
+            response = "¡Hola! Soy tu asistente de documentación. Puedo ayudarte a crear documentos técnicos, generar diagramas y organizar tu contenido. ¿En qué te puedo ayudar hoy?"
+            suggestions = ['Generar documentación', 'Crear diagrama', 'Ver ejemplos']
+
+        elif any(word in lower_message for word in ['diagrama', 'diagram']):
+            response = """Puedo ayudarte a crear varios tipos de diagramas:
+
+1. **Diagramas de Flujo**: Para representar procesos y flujos de trabajo
+2. **Diagramas de Secuencia**: Para mostrar interacciones entre componentes
+3. **Diagramas de Arquitectura**: Para visualizar la estructura del sistema
+4. **Diagramas de Entidades**: Para modelar bases de datos
+
+¿Qué tipo de diagrama necesitas?"""
+            suggestions = ['Crear diagrama de flujo', 'Diagrama de arquitectura', 'Ver ejemplos']
+
+        elif any(word in lower_message for word in ['documentación', 'documento', 'crear']):
+            response = """Puedo ayudarte a crear diferentes tipos de documentación:
+
+- **Documentación de Infraestructura**: Redes, servidores, arquitectura
+- **Guías de Administración**: Procedimientos operativos
+- **Documentación de Despliegue**: CI/CD, deployment
+- **Arquitectura de Software**: Diseño de sistemas
+- **Guías de Usuario**: Manuales y tutoriales
+
+¿Qué tipo de documentación necesitas?"""
+            suggestions = ['Documentación de API', 'Guía de usuario', 'Arquitectura de sistema']
+
+        else:
+            response = """Entiendo tu consulta. Para brindarte una mejor asistencia, te recomiendo:
+
+1. Especificar qué tipo de documentación necesitas
+2. Describir el contexto de tu proyecto
+3. Indicar si necesitas incluir diagramas
+
+Nota: Para respuestas más precisas y personalizadas, configura una API key de OpenAI en las variables de entorno."""
+            suggestions = ['Ver plantillas', 'Generar con IA', 'Ejemplos']
+
+        return Response({
+            'success': True,
+            'response': response,
+            'suggestions': suggestions,
+            'is_mock': True
+        }, status=status.HTTP_200_OK)
+
+
 class DiagramGenerationView(APIView):
     """
     API View para generación de diagramas Mermaid desde texto.

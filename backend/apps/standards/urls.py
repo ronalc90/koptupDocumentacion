@@ -8,6 +8,7 @@ from .views import (
     DocumentationGenerationView,
     ProjectDocumentationGenerationView,
     DiagramGenerationView,
+    AIChatView,
 )
 
 router = DefaultRouter()
@@ -20,4 +21,5 @@ urlpatterns = [
     path('generate/', DocumentationGenerationView.as_view(), name='generate-documentation'),
     path('generate-project/', ProjectDocumentationGenerationView.as_view(), name='generate-project-documentation'),
     path('generate-diagram/', DiagramGenerationView.as_view(), name='generate-diagram'),
+    path('chat/', AIChatView.as_view(), name='ai-chat'),
 ]
