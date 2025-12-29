@@ -4,14 +4,75 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
 from .models import (
-    Workspace, Document, DocumentVersion, DocumentComment,
+    WorkspaceType, Workspace, Document, DocumentVersion, DocumentComment,
     DocumentAttachment, DocumentHistory, DocumentReference
 )
 from .serializers import (
-    WorkspaceSerializer, DocumentSerializer, DocumentVersionSerializer, DocumentCommentSerializer,
+    WorkspaceTypeSerializer, WorkspaceSerializer, DocumentSerializer, DocumentVersionSerializer, DocumentCommentSerializer,
     DocumentAttachmentSerializer, DocumentHistorySerializer, DocumentReferenceSerializer
 )
+
+
+class WorkspaceTypeViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing workspace types.
+
+    Endpoints:
+    - GET /api/v1/documents/workspace-types/ - List all workspace types
+    - GET /api/v1/documents/workspace-types/{id}/ - Get workspace type detail
+    - POST /api/v1/documents/workspace-types/ - Create workspace type
+    - PUT/PATCH /api/v1/documents/workspace-types/{id}/ - Update workspace type
+    - DELETE /api/v1/documents/workspace-types/{id}/ - Delete workspace type
+    """
+
+    queryset = WorkspaceType.objects.all()
+    serializer_class = WorkspaceTypeSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_active', 'is_system']
+    search_fields = ['key', 'label', 'description']
+    ordering_fields = ['order', 'label', 'created_at']
+    ordering = ['order', 'label']
+
+    def get_queryset(self):
+        """Filter types by organization - include global types + organization types."""
+        queryset = super().get_queryset()
+        if self.request.user.organization:
+            queryset = queryset.filter(
+                Q(organization__isnull=True) |  # Tipos globales
+                Q(organization=self.request.user.organization)  # Tipos de la organización
+            )
+        else:
+            # Si el usuario no tiene organización, solo mostrar tipos globales
+            queryset = queryset.filter(organization__isnull=True)
+        return queryset.filter(is_active=True)
+
+    def perform_create(self, serializer):
+        """Assign organization and created_by when creating type."""
+        serializer.save(
+            organization=self.request.user.organization,
+            created_by=self.request.user
+        )
+
+    def perform_destroy(self, instance):
+        """Prevent deletion of system types or types with workspaces."""
+        if instance.is_system:
+            return Response(
+                {"error": "Los tipos de sistema no pueden ser eliminados"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if instance.workspaces.filter(is_active=True).exists():
+            return Response(
+                {"error": "No se puede eliminar un tipo que tiene espacios asociados"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Soft delete
+        instance.is_active = False
+        instance.save()
 
 
 class WorkspaceViewSet(viewsets.ModelViewSet):
@@ -44,11 +105,46 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Assign organization and created_by when creating workspace."""
+        # Si el usuario no tiene organización, crear una organización personal
         if not self.request.user.organization:
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError({
-                'organization': ['El usuario debe pertenecer a una organización para crear espacios.']
-            })
+            from django.utils.text import slugify
+            from apps.users.models import Organization
+
+            user = self.request.user
+            org_name_base = f"{user.first_name} {user.last_name}".strip()
+            if not org_name_base:
+                org_name_base = user.email.split('@')[0]
+
+            # Crear nombre único
+            org_name = f"Organización de {org_name_base}"
+            name_counter = 1
+            unique_name = org_name
+            while Organization.objects.filter(name=unique_name).exists():
+                unique_name = f"{org_name} {name_counter}"
+                name_counter += 1
+
+            # Crear slug único
+            base_slug = slugify(org_name_base)
+            slug = base_slug
+            slug_counter = 1
+            while Organization.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{slug_counter}"
+                slug_counter += 1
+
+            # Crear organización personal
+            personal_org = Organization.objects.create(
+                name=unique_name,
+                slug=slug,
+                description=f"Organización personal de {user.email}",
+                subscription_plan='FREE',
+                max_users=1,
+                max_projects=3,
+                max_storage_gb=1
+            )
+
+            # Asignar organización al usuario
+            user.organization = personal_org
+            user.save()
 
         serializer.save(
             organization=self.request.user.organization,

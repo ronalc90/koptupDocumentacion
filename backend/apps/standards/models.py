@@ -26,7 +26,10 @@ class DocumentationStandard(models.Model):
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
-        related_name='standards'
+        related_name='standards',
+        null=True,
+        blank=True,
+        help_text="Organización propietaria. Si es null, el estándar es global/predeterminado para todas las organizaciones."
     )
     name = models.CharField(max_length=200, help_text="Nombre del estándar (ej: Casos de Uso)")
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
@@ -68,13 +71,14 @@ class DocumentationStandard(models.Model):
 
     class Meta:
         db_table = 'documentation_standards'
-        unique_together = ['organization', 'name']
         ordering = ['category', 'name']
         verbose_name = 'Estándar de Documentación'
         verbose_name_plural = 'Estándares de Documentación'
 
     def __str__(self):
-        return f"{self.name} ({self.organization.name})"
+        if self.organization:
+            return f"{self.name} ({self.organization.name})"
+        return f"{self.name} (Global)"
 
 
 class DocumentationExample(models.Model):

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { fetchDocuments, createDocument } from '../../store/slices/documentsSlice';
 import projectService from '../../services/projectService';
 import standardsService from '../../services/standardsService';
+import workspaceService from '../../services/workspaceService';
+import documentService from '../../services/documentService';
 import {
   Box,
   Typography,
@@ -16,7 +18,13 @@ import {
   MenuItem,
   Select,
   InputLabel,
+  IconButton,
+  Breadcrumbs,
+  Link,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
+import { ArrowBack, Add, Folder, Description } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { can } from '../../utils/permissions';
 import { useTheme } from '@mui/material/styles';
@@ -25,7 +33,8 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 const Documents = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { documents, isLoading } = useSelector((s) => s.documents);
+  const { workspaceId } = useParams(); // Obtener workspace ID de la URL
+  const { documents: allDocuments, isLoading: isLoadingRedux } = useSelector((s) => s.documents);
   const { user } = useSelector((s) => s.auth);
   const role = user?.role || 'DEV';
   const theme = useTheme();
@@ -33,6 +42,11 @@ const Documents = () => {
   const titleVariant = isXs ? 'h5' : 'h4';
   const btnSize = isXs ? 'small' : 'medium';
   const chipSize = isXs ? 'small' : 'medium';
+
+  // Estados
+  const [workspace, setWorkspace] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [projects, setProjects] = useState([]);
   const [docTypes, setDocTypes] = useState([]);
   const [newDoc, setNewDoc] = useState({
@@ -40,76 +54,162 @@ const Documents = () => {
     document_type: '',
     title: '',
     content: '',
-    status: 'DRAFT',
+    status: 'EN_REVISION',
     version: '1.0',
     created_by: user?.id || null,
   });
   const canCreate = can(role, 'documents.document.create');
 
   const STATUS = [
-    'DRAFT',
-    'AI_GENERATED',
-    'IN_REVIEW',
-    'APPROVED',
-    'REJECTED',
+    { value: 'EN_REVISION', label: 'En revisión' },
+    { value: 'APROBADO', label: 'Aprobado' },
+    { value: 'RECHAZADO', label: 'Rechazado' },
   ];
 
   useEffect(() => {
-    dispatch(fetchDocuments());
-    (async () => {
+    const loadData = async () => {
+      setIsLoading(true);
       try {
-        const [p, t] = await Promise.all([
-          projectService.getAll(),
-          standardsService.getStandards(),
-        ]);
-        setProjects(p.results || p);
-        setDocTypes(t.results || t);
+        // Si hay workspaceId, cargar workspace y sus documentos
+        if (workspaceId) {
+          const [ws, docs, p, t] = await Promise.all([
+            workspaceService.getById(workspaceId),
+            documentService.getAll({ workspace: workspaceId }),
+            projectService.getAll(),
+            standardsService.getStandards(),
+          ]);
+          setWorkspace(ws);
+          setDocuments(docs.results || docs || []);
+          setProjects(p.results || p);
+          setDocTypes(t.results || t);
+        } else {
+          // Si no hay workspaceId, cargar todos los documentos
+          dispatch(fetchDocuments());
+          const [p, t] = await Promise.all([
+            projectService.getAll(),
+            standardsService.getStandards(),
+          ]);
+          setProjects(p.results || p);
+          setDocTypes(t.results || t);
+          setDocuments(allDocuments);
+        }
       } catch (e) {
-        toast.error('No se pudieron cargar proyectos/estándares');
+        console.error('Error al cargar datos:', e);
+        toast.error('No se pudieron cargar los datos');
+      } finally {
+        setIsLoading(false);
       }
-    })();
-  }, [dispatch]);
-
-  const getStatusColor = (status) => {
-    const colors = {
-      DRAFT: 'default',
-      AI_GENERATED: 'info',
-      IN_REVIEW: 'warning',
-      APPROVED: 'success',
-      REJECTED: 'error',
     };
-    return colors[status] || 'default';
-  };
+
+    loadData();
+  }, [dispatch, workspaceId, allDocuments]);
 
   const onCreate = async () => {
-    const required = ['project', 'document_type', 'title', 'content'];
+    // Validación más flexible cuando estamos en un workspace
+    const required = workspaceId ? ['title'] : ['project', 'document_type', 'title', 'content'];
     if (required.some((k) => !newDoc[k])) {
-      toast.info('Completa proyecto, tipo, título y contenido');
+      const mensaje = workspaceId ? 'Completa el título' : 'Completa proyecto, tipo, título y contenido';
+      toast.info(mensaje);
       return;
     }
     try {
-      const created = await dispatch(createDocument(newDoc)).unwrap();
+      // Si estamos en un workspace, asociar el documento al workspace
+      const docData = { ...newDoc };
+      if (workspaceId) {
+        docData.workspace = parseInt(workspaceId);
+      }
+
+      const created = await dispatch(createDocument(docData)).unwrap();
       toast.success('Documento creado');
       setNewDoc({
         project: '',
         document_type: '',
         title: '',
         content: '',
-        status: 'DRAFT',
+        status: 'EN_REVISION',
         version: '1.0',
         created_by: user?.id || null,
       });
+
+      // Recargar documentos del workspace
+      if (workspaceId) {
+        const docs = await documentService.getAll({ workspace: workspaceId });
+        setDocuments(docs.results || docs || []);
+      }
+
       navigate(`/documents/${created.id}`);
     } catch (e) {
+      console.error('Error al crear documento:', e);
       toast.error('No se pudo crear el documento');
     }
   };
 
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      <Typography variant={titleVariant} gutterBottom>Gestión de Documentos</Typography>
+      {/* Header con breadcrumbs si estamos en un workspace */}
+      {workspaceId && workspace && (
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <IconButton onClick={() => navigate('/spaces')} sx={{ mr: 1 }}>
+              <ArrowBack />
+            </IconButton>
+            <Breadcrumbs>
+              <Link
+                underline="hover"
+                color="inherit"
+                onClick={() => navigate('/spaces')}
+                sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                <Folder sx={{ mr: 0.5, fontSize: 20 }} />
+                Espacios
+              </Link>
+              <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+                {workspace.name}
+              </Typography>
+            </Breadcrumbs>
+          </Box>
 
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant={titleVariant} sx={{ fontWeight: 700 }}>
+                {workspace.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {workspace.description || 'Sin descripción'}
+              </Typography>
+              <Chip
+                label={`${documents.length} documento${documents.length !== 1 ? 's' : ''}`}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate(`/documents/new?workspace=${workspaceId}`)}
+              sx={{ textTransform: 'none' }}
+            >
+              Nuevo Documento
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      {!workspaceId && (
+        <Typography variant={titleVariant} gutterBottom>Gestión de Documentos</Typography>
+      )}
+
+      {/* Formulario de creación solo si NO estamos en un workspace */}
+      {!workspaceId && (
+        <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
         <Grid item xs={12} md={4}>
           <InputLabel id="project-label">Proyecto</InputLabel>
           <Select
@@ -152,8 +252,8 @@ const Documents = () => {
             disabled={!canCreate}
           >
             {STATUS.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
+              <MenuItem key={s.value} value={s.value}>
+                {s.label}
               </MenuItem>
             ))}
           </TextField>
@@ -195,23 +295,84 @@ const Documents = () => {
           </Grid>
         )}
       </Grid>
+      )}
 
+      {/* Lista de documentos */}
       <Grid container spacing={{ xs: 2, sm: 3 }}>
         {documents.map((doc) => (
-          <Grid item xs={12} md={6} key={doc.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{doc.title}</Typography>
-                <Typography color="text.secondary" gutterBottom>
-                  {doc.project_code} · {doc.document_type_name} · v{doc.version}
-                </Typography>
-                <Chip label={doc.status} color={getStatusColor(doc.status)} size={chipSize} />
-                <Box sx={{ mt: 2 }}>
-                  <Button size={btnSize} onClick={() => navigate(`/documents/${doc.id}`)}>
-                    Editar
-                  </Button>
+          <Grid item xs={12} md={6} lg={4} key={doc.id}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                },
+              }}
+              onClick={() => navigate(`/documents/${doc.id}`)}
+            >
+              <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, flex: 1, pr: 1 }}>
+                    {doc.title}
+                  </Typography>
+                  <Chip
+                    label={`v${doc.version}`}
+                    size="small"
+                    sx={{
+                      fontSize: '0.7rem',
+                      height: 20,
+                      bgcolor: 'rgba(0, 0, 0, 0.06)',
+                      fontWeight: 500,
+                    }}
+                  />
                 </Box>
+
+                {doc.document_type_name && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <Description sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      {doc.document_type_name}
+                    </Typography>
+                  </Box>
+                )}
+
+                {doc.project_code && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Folder sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {doc.project_code}
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
+
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'rgba(0, 0, 0, 0.02)',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Modificado: {new Date(doc.updated_at).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </Typography>
+                {doc.last_modified_by_name && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem' }}>
+                    Por: {doc.last_modified_by_name}
+                  </Typography>
+                )}
+              </Box>
             </Card>
           </Grid>
         ))}

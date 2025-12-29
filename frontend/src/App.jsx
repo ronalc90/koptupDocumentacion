@@ -42,6 +42,7 @@ function App() {
         <Route path="documents" element={<Documents />} />
         <Route path="documents/:id" element={<DocumentEditor />} />
         <Route path="spaces" element={<Spaces />} />
+        <Route path="spaces/:workspaceId" element={<Documents />} />
         <Route path="search" element={<Search />} />
         <Route path="favorites" element={<Favorites />} />
         <Route path="recent" element={<Recent />} />

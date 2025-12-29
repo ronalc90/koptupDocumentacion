@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
@@ -60,6 +60,8 @@ import {
 const DocumentEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const workspaceId = searchParams.get('workspace');
   const mermaidRef = useRef(null);
 
   // Inicializar Mermaid
@@ -413,12 +415,19 @@ const DocumentEditor = () => {
     try {
       if (id === 'new') {
         // Crear nuevo documento en la API
-        const newDoc = await documentService.create({
+        const docData = {
           title: editedTitle || 'Documento Sin Título',
           content: htmlContent,
-          status: 'DRAFT',
-          project: 1, // ID del proyecto por defecto
-        });
+          status: 'EN_REVISION',
+          // No incluir project si no existe, el campo es opcional
+        };
+
+        // Asociar al workspace si viene de query params
+        if (workspaceId) {
+          docData.workspace = parseInt(workspaceId);
+        }
+
+        const newDoc = await documentService.create(docData);
         console.log('Nuevo documento creado:', newDoc);
 
         // Redirigir al documento recién creado
@@ -457,6 +466,8 @@ const DocumentEditor = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Error al guardar documento en la API:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
 
       // Fallback: guardar solo en localStorage
       setDocument(updatedDoc);
@@ -983,7 +994,7 @@ const DocumentEditor = () => {
             <Editor
               editorState={editorState}
               onEditorStateChange={setEditorState}
-              placeholder="Escribe tu contenido aquí... El primer párrafo será el título del documento."
+              placeholder="Escribe el contenido de tu documento aquí..."
             />
           </Box>
         </Box>

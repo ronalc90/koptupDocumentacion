@@ -7,6 +7,69 @@ from apps.agile.models import UserStory, Task
 from apps.standards.models import DocumentationStandard
 
 
+class WorkspaceType(models.Model):
+    """
+    Tipo de Workspace - Define categorías personalizables de espacios de trabajo.
+    Puede ser global (organization=null) o específico de una organización.
+    """
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='workspace_types',
+        null=True,
+        blank=True,
+        help_text="Organización propietaria. Si es null, el tipo es global/predeterminado."
+    )
+    key = models.CharField(
+        max_length=50,
+        help_text="Clave única del tipo (ej: TECHNICAL, CUSTOM_TYPE)"
+    )
+    label = models.CharField(
+        max_length=200,
+        help_text="Nombre visible del tipo (ej: Documentación Técnica)"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Descripción del propósito y uso de este tipo de espacio"
+    )
+    icon = models.CharField(
+        max_length=50,
+        blank=True,
+        default='Folder',
+        help_text="Nombre del icono Material-UI"
+    )
+    color = models.CharField(
+        max_length=7,
+        default='#667eea',
+        help_text="Color en formato hexadecimal"
+    )
+    is_active = models.BooleanField(default=True)
+    is_system = models.BooleanField(
+        default=False,
+        help_text="Los tipos de sistema no pueden ser eliminados"
+    )
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_workspace_types'
+    )
+
+    class Meta:
+        db_table = 'workspace_types'
+        ordering = ['order', 'label']
+        unique_together = ['organization', 'key']
+
+    def __str__(self):
+        if self.organization:
+            return f"{self.label} ({self.organization.name})"
+        return f"{self.label} (Global)"
+
+
 class Workspace(models.Model):
     """
     Workspace model - Categorizes documents into different knowledge areas.
@@ -18,6 +81,7 @@ class Workspace(models.Model):
     - Base de Conocimiento: FAQs, troubleshooting, best practices
     """
 
+    # Mantener TYPE_CHOICES para compatibilidad con datos antiguos (migration path)
     TYPE_CHOICES = [
         ('TECHNICAL', 'Documentación Técnica'),
         ('PROCESSES', 'Procesos'),
@@ -31,7 +95,26 @@ class Workspace(models.Model):
         related_name='workspaces'
     )
     name = models.CharField(max_length=255)
-    type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+
+    # Nuevo campo: relación con WorkspaceType
+    workspace_type = models.ForeignKey(
+        WorkspaceType,
+        on_delete=models.PROTECT,
+        related_name='workspaces',
+        null=True,
+        blank=True,
+        help_text="Tipo de workspace (nueva implementación)"
+    )
+
+    # Campo legacy - mantener por compatibilidad durante migración
+    type = models.CharField(
+        max_length=50,
+        choices=TYPE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="Tipo legacy - usar workspace_type en su lugar"
+    )
+
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, blank=True)  # Material-UI icon name
     color = models.CharField(max_length=20, blank=True)  # Hex color code
@@ -59,11 +142,9 @@ class Document(models.Model):
     """Main document model."""
 
     STATUS_CHOICES = [
-        ('DRAFT', 'Borrador'),
-        ('AI_GENERATED', 'Generado por IA'),
-        ('IN_REVIEW', 'En revisión'),
-        ('APPROVED', 'Aprobado'),
-        ('REJECTED', 'Rechazado'),
+        ('EN_REVISION', 'En revisión'),
+        ('APROBADO', 'Aprobado'),
+        ('RECHAZADO', 'Rechazado'),
     ]
 
     workspace = models.ForeignKey(
@@ -90,7 +171,7 @@ class Document(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     content_html = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='EN_REVISION')
     version = models.CharField(max_length=20, default='1.0')
     user_story = models.ForeignKey(
         UserStory,
@@ -145,7 +226,9 @@ class Document(models.Model):
         ordering = ['-updated_at']
 
     def __str__(self):
-        return f"{self.project.code} - {self.title}"
+        if self.project:
+            return f"{self.project.code} - {self.title}"
+        return self.title
 
     def increment_version(self):
         """Incrementa la versión del documento automáticamente."""

@@ -605,11 +605,9 @@ Proyectos de desarrollo
 Documentos generados
 
 **Estados**:
-- `DRAFT`: Borrador
-- `AI_GENERATED`: Generado por IA
-- `IN_REVIEW`: En revisión
-- `APPROVED`: Aprobado
-- `REJECTED`: Rechazado
+- `EN_REVISION`: En revisión
+- `APROBADO`: Aprobado
+- `RECHAZADO`: Rechazado
 
 **Campos clave**:
 - `workspace_id`: Workspace al que pertenece

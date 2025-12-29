@@ -59,6 +59,42 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
+
+        # Si el usuario no tiene organización, crear una organización personal
+        if not validated_data.get('organization'):
+            from django.utils.text import slugify
+            org_name_base = f"{validated_data.get('first_name', '')} {validated_data.get('last_name', '')}".strip()
+            if not org_name_base:
+                org_name_base = validated_data.get('email', 'usuario').split('@')[0]
+
+            # Crear nombre único
+            org_name = f"Organización de {org_name_base}"
+            name_counter = 1
+            unique_name = org_name
+            while Organization.objects.filter(name=unique_name).exists():
+                unique_name = f"{org_name} {name_counter}"
+                name_counter += 1
+
+            # Crear slug único
+            base_slug = slugify(org_name_base)
+            slug = base_slug
+            slug_counter = 1
+            while Organization.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{slug_counter}"
+                slug_counter += 1
+
+            # Crear organización personal
+            personal_org = Organization.objects.create(
+                name=unique_name,
+                slug=slug,
+                description=f"Organización personal de {validated_data.get('email', 'usuario')}",
+                subscription_plan='FREE',
+                max_users=1,
+                max_projects=3,
+                max_storage_gb=1
+            )
+            validated_data['organization'] = personal_org
+
         user = User.objects.create_user(**validated_data)
         UserProfile.objects.create(user=user)
         return user

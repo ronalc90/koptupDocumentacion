@@ -2,11 +2,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    WorkspaceViewSet, DocumentViewSet, DocumentVersionViewSet, DocumentCommentViewSet,
+    WorkspaceTypeViewSet, WorkspaceViewSet, DocumentViewSet, DocumentVersionViewSet, DocumentCommentViewSet,
     DocumentAttachmentViewSet, DocumentHistoryViewSet, DocumentReferenceViewSet
 )
 
 router = DefaultRouter()
+router.register(r'workspace-types', WorkspaceTypeViewSet, basename='workspace-type')
 router.register(r'workspaces', WorkspaceViewSet, basename='workspace')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'versions', DocumentVersionViewSet, basename='version')

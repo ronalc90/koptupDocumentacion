@@ -205,7 +205,7 @@ const AIGenerate = () => {
         title: documentTitle,
         content: htmlContent,
         workspace: selectedWorkspace,
-        status: 'AI_GENERATED',
+        status: 'EN_REVISION',
       });
 
       // Redirigir al documento creado
@@ -496,10 +496,8 @@ const AIGenerate = () => {
 
       {/* Diálogo para guardar documento */}
       <Dialog open={saveDialogOpen} onClose={handleCloseSaveDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Guardar Documento Generado
-          </Typography>
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          Guardar Documento Generado
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>

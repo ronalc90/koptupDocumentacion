@@ -74,6 +74,8 @@ import {
   Palette,
 } from '@mui/icons-material';
 import workspaceService from '../../services/workspaceService';
+import workspaceTypeService from '../../services/workspaceTypeService';
+import WorkspaceTypeManager from '../../components/WorkspaceTypeManager';
 
 // Galería completa de iconos disponibles
 const AVAILABLE_ICONS = [
@@ -201,6 +203,9 @@ const Spaces = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState(null);
 
+  // Diálogo de gestión de tipos
+  const [openTypesDialog, setOpenTypesDialog] = useState(false);
+
   // Notificaciones (Snackbar)
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -227,7 +232,7 @@ const Spaces = () => {
   }, []);
 
   const handleViewDocuments = (workspace) => {
-    navigate(`/?workspace=${workspace.id}`);
+    navigate(`/spaces/${workspace.id}`);
   };
 
   // Abrir diálogo para crear workspace
@@ -295,6 +300,8 @@ const Spaces = () => {
       fetchWorkspaces();
     } catch (err) {
       console.error('Error al guardar workspace:', err);
+      console.error('Response data:', err.response?.data);
+      console.error('Response status:', err.response?.status);
 
       // Extraer mensaje de error amigable
       let errorMessage = 'No se pudo guardar el espacio';
@@ -390,6 +397,12 @@ const Spaces = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Manejar cuando se guardan cambios en tipos
+  const handleTypesSaved = () => {
+    // Recargar workspaces para reflejar cualquier cambio
+    fetchWorkspaces();
+  };
+
   // Manejar cambio de tipo (actualiza color e icono automáticamente)
   const handleTypeChange = (type) => {
     setFormData({
@@ -419,18 +432,36 @@ const Spaces = () => {
             Organiza tus documentos en espacios colaborativos por categoría
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            textTransform: 'none',
-            px: 3,
-          }}
-        >
-          Nuevo Espacio
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<Settings />}
+            onClick={() => setOpenTypesDialog(true)}
+            sx={{
+              textTransform: 'none',
+              borderColor: '#667eea',
+              color: '#667eea',
+              '&:hover': {
+                borderColor: '#764ba2',
+                bgcolor: 'rgba(102, 126, 234, 0.05)',
+              },
+            }}
+          >
+            Gestionar Tipos
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleOpenCreateDialog}
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              textTransform: 'none',
+              px: 3,
+            }}
+          >
+            Nuevo Espacio
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -463,7 +494,10 @@ const Spaces = () => {
       ) : (
         <Grid container spacing={3}>
           {workspaces.map((workspace) => {
-            const Icon = ICON_MAP[workspace.icon] || ICON_MAP[DEFAULT_ICONS[workspace.type]] || Code;
+            // Use workspace_type_data if available, otherwise fall back to legacy fields
+            const iconKey = workspace.workspace_type_data?.icon || workspace.icon || DEFAULT_ICONS[workspace.type];
+            const Icon = ICON_MAP[iconKey] || Code;
+            const color = workspace.workspace_type_data?.color || workspace.color || '#667eea';
 
             return (
               <Grid item xs={12} sm={6} md={4} key={workspace.id}>
@@ -484,7 +518,7 @@ const Spaces = () => {
                   <Box
                     sx={{
                       height: 8,
-                      background: `linear-gradient(135deg, ${workspace.color || '#667eea'} 0%, ${workspace.color || '#667eea'}dd 100%)`,
+                      background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
                     }}
                   />
                   <CardContent sx={{ flexGrow: 1 }}>
@@ -492,7 +526,7 @@ const Spaces = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
                           sx={{
-                            bgcolor: workspace.color || '#667eea',
+                            bgcolor: color,
                             width: 48,
                             height: 48,
                           }}
@@ -605,7 +639,13 @@ const Spaces = () => {
       </Menu>
 
       {/* Diálogo para crear/editar workspace */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+        disableEnforceFocus
+      >
         <DialogTitle sx={{ pb: 1 }}>
           <Box sx={{ fontWeight: 700, fontSize: '1.5rem', mb: 0.5 }}>
             {editingWorkspace ? 'Editar Espacio' : 'Crear Nuevo Espacio'}
@@ -865,7 +905,11 @@ const Spaces = () => {
       </Dialog>
 
       {/* Diálogo de confirmación de eliminación */}
-      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        disableEnforceFocus
+      >
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <Typography>
@@ -882,6 +926,13 @@ const Spaces = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Diálogo de gestión de tipos de espacios */}
+      <WorkspaceTypeManager
+        open={openTypesDialog}
+        onClose={() => setOpenTypesDialog(false)}
+        onSave={handleTypesSaved}
+      />
 
       {/* Notificaciones Snackbar */}
       <Snackbar

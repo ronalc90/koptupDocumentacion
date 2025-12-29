@@ -1,9 +1,31 @@
 """Documents serializers."""
 from rest_framework import serializers
 from .models import (
-    Workspace, Document, DocumentVersion, DocumentComment,
+    WorkspaceType, Workspace, Document, DocumentVersion, DocumentComment,
     DocumentAttachment, DocumentHistory, DocumentReference
 )
+
+
+class WorkspaceTypeSerializer(serializers.ModelSerializer):
+    """Serializer for WorkspaceType model."""
+
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    can_delete = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WorkspaceType
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'created_by', 'organization']
+
+    def get_can_delete(self, obj):
+        """Determina si el tipo puede ser eliminado."""
+        # Los tipos de sistema no pueden eliminarse
+        if obj.is_system:
+            return False
+        # Si tiene workspaces asociados, no puede eliminarse
+        if obj.workspaces.filter(is_active=True).exists():
+            return False
+        return True
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
@@ -11,16 +33,38 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
     document_count = serializers.SerializerMethodField()
-    type_display = serializers.CharField(source='get_type_display', read_only=True)
+    type_display = serializers.SerializerMethodField()
+
+    # Campos dinámicos del WorkspaceType
+    workspace_type_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Workspace
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'created_by']
+        read_only_fields = ['created_at', 'updated_at', 'created_by', 'organization']
 
     def get_document_count(self, obj):
         """Retorna el número total de documentos en el workspace."""
         return obj.documents.filter(is_deleted=False).count()
+
+    def get_type_display(self, obj):
+        """Retorna el label del WorkspaceType si existe, sino usa get_type_display legacy."""
+        if obj.workspace_type:
+            return obj.workspace_type.label
+        return obj.get_type_display() if obj.type else ''
+
+    def get_workspace_type_data(self, obj):
+        """Retorna los datos completos del WorkspaceType."""
+        if obj.workspace_type:
+            return {
+                'id': obj.workspace_type.id,
+                'key': obj.workspace_type.key,
+                'label': obj.workspace_type.label,
+                'description': obj.workspace_type.description,
+                'icon': obj.workspace_type.icon,
+                'color': obj.workspace_type.color,
+            }
+        return None
 
 
 class DocumentSerializer(serializers.ModelSerializer):

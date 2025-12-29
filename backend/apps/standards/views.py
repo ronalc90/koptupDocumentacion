@@ -49,9 +49,15 @@ class DocumentationStandardViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # Filtrar por organización del usuario
+        # Incluir estándares globales (organization=null) + estándares de la organización del usuario
         if self.request.user.organization:
-            queryset = queryset.filter(organization=self.request.user.organization)
+            queryset = queryset.filter(
+                Q(organization__isnull=True) |  # Estándares globales
+                Q(organization=self.request.user.organization)  # Estándares de la organización
+            )
+        else:
+            # Si el usuario no tiene organización, solo mostrar estándares globales
+            queryset = queryset.filter(organization__isnull=True)
         return queryset
 
     def perform_create(self, serializer):
@@ -194,11 +200,11 @@ class DocumentationGenerationView(APIView):
         task_id = serializer.validated_data.get('task_id')
 
         try:
-            # Obtener el estándar
+            # Obtener el estándar (puede ser global o de la organización)
             standard = DocumentationStandard.objects.get(
-                id=standard_id,
-                organization=request.user.organization,
-                is_active=True
+                Q(id=standard_id) &
+                Q(is_active=True) &
+                (Q(organization__isnull=True) | Q(organization=request.user.organization))
             )
 
             # Generar la documentación
