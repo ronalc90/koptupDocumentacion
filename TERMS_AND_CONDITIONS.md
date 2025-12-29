@@ -215,7 +215,7 @@ Para usuarios en la Unión Europea:
 - Derecho a portabilidad de datos
 - Derecho a oponerse al procesamiento
 
-Contacto DPO: privacy@koptup.com
+Contacto DPO: ronalddemiancipagauta@gmail.com
 
 ---
 
@@ -394,8 +394,8 @@ El Usuario no puede ceder estos Términos sin consentimiento escrito de Koptup. 
 Las notificaciones deben enviarse a:
 
 **Para Koptup:**
-- Email: legal@koptup.com
-- Dirección: [Dirección física de Koptup]
+- Email: ronalddemiancipagauta@gmail.com
+- Dirección: Bogotá, Colombia
 
 **Para el Usuario:**
 - Al email registrado en la cuenta
@@ -424,10 +424,11 @@ Las disposiciones que por su naturaleza deben sobrevivir a la terminación (incl
 
 Para preguntas sobre estos Términos y Condiciones:
 
-- **Email legal:** legal@koptup.com
-- **Email soporte:** support@koptup.com
+- **Email general:** ronalddemiancipagauta@gmail.com
+- **Email legal:** ronalddemiancipagauta@gmail.com
+- **Email soporte:** ronalddemiancipagauta@gmail.com
+- **Email ventas:** ronalddemiancipagauta@gmail.com
 - **Sitio web:** https://koptup.com/contact
-- **Teléfono:** +57 (1) XXX-XXXX
 
 ---
 

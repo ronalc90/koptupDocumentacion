@@ -226,7 +226,7 @@ Este software requiere una suscripción comercial activa para su uso.
 
 💳 **Adquirir Licencia:**
 - Sitio web: https://koptup.com/pricing
-- Email: sales@koptup.com
+- Email: ronalddemiancipagauta@gmail.com
 
 ---
 
@@ -234,6 +234,7 @@ Este software requiere una suscripción comercial activa para su uso.
 
 - [CHANGELOG.md](./CHANGELOG.md) - Historial de cambios
 - [README.md](./README.md) - Guía principal
+- [CONTACT.md](./CONTACT.md) - Información de contacto
 - [Documentación de API](#) - Endpoints y ejemplos
 
 ---

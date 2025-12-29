@@ -214,6 +214,7 @@ npm test
 - API Docs (Swagger): http://localhost:8000/swagger/
 - API Docs (ReDoc): http://localhost:8000/redoc/
 - Estado del Proyecto: [PROJECT_STATUS.md](PROJECT_STATUS.md)
+- Contacto: [CONTACT.md](CONTACT.md)
 
 ## 🤝 Contribución
 
