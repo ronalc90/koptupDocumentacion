@@ -1,4 +1,4 @@
-# Plataforma de Gestión Documental Corporativa
+# Koptup Documentación - Plataforma de Gestión Documental
 
 Sistema enterprise para centralizar, estandarizar, generar, validar y certificar documentación de proyectos con soporte de IA.
 
