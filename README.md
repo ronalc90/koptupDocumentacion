@@ -225,7 +225,20 @@ npm test
 
 ## 📄 Licencia
 
-Este proyecto es privado y confidencial.
+**SOFTWARE COMERCIAL PROPIETARIO**
+
+Este es un software comercial de uso exclusivo mediante suscripción pagada.
+
+⚠️ **USO NO AUTORIZADO ESTÁ PROHIBIDO**
+
+- ❌ No se permite uso sin suscripción comercial activa
+- ❌ No se permite distribución, modificación o ingeniería inversa
+- ❌ Todos los derechos reservados por Koptup
+
+Para adquirir una licencia comercial válida, visite: https://koptup.com/pricing
+
+Ver [LICENSE](./LICENSE) para términos completos de la licencia.
+Ver [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) para términos de uso del servicio.
 
 ## 👥 Equipo
 

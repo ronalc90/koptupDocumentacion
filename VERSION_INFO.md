@@ -211,7 +211,22 @@ Todos los problemas identificados durante el desarrollo fueron resueltos:
 
 ## 📄 Licencia
 
-[Especificar licencia aquí]
+**SOFTWARE COMERCIAL PROPIETARIO - Koptup © 2025**
+
+Este software requiere una suscripción comercial activa para su uso.
+
+⚠️ **Advertencia Legal:**
+- El uso sin licencia válida está prohibido y constituye violación de derechos de autor
+- Sujeto a acciones legales según la ley de propiedad intelectual
+- No se permite ingeniería inversa, modificación o redistribución
+
+📋 **Documentos Legales:**
+- [LICENSE](./LICENSE) - Licencia de Software Propietario
+- [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) - Términos y Condiciones de Uso
+
+💳 **Adquirir Licencia:**
+- Sitio web: https://koptup.com/pricing
+- Email: sales@koptup.com
 
 ---
 
