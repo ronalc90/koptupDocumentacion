@@ -480,9 +480,21 @@ const DocumentEditor = () => {
   };
 
   const handleCancel = () => {
-    setEditedTitle(document.title);
-    setEditedContent(document.content);
-    setIsEditing(false);
+    // Si es un documento nuevo, redirigir al origen
+    if (id === 'new') {
+      if (workspaceId) {
+        // Si venimos de un workspace, volver al workspace
+        navigate(`/spaces/${workspaceId}`);
+      } else {
+        // Si no, volver a la lista de documentos
+        navigate('/documents');
+      }
+    } else {
+      // Si es un documento existente, solo cancelar edición
+      setEditedTitle(document.title);
+      setEditedContent(document.content);
+      setIsEditing(false);
+    }
   };
 
   const handleCreateChild = () => {
