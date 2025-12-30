@@ -171,9 +171,13 @@ const AIGenerate = () => {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'");
+          .replace(/&#39;/g, "'")
+          .trim();
 
-        return `<div class="mermaid" style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 16px 0;">${decodedCode}</div>`;
+        // Preservar saltos de línea convirtiéndolos a <br> para el HTML
+        const codeWithBreaks = decodedCode.replace(/\n/g, '<br>');
+
+        return `<div class="mermaid" style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 16px 0;">${codeWithBreaks}</div>`;
       }
     );
 
