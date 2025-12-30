@@ -32,6 +32,8 @@ import {
   CardContent,
   CardActionArea,
   Popover,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import {
   MoreHoriz,
@@ -92,6 +94,7 @@ const DocumentEditor = () => {
   const [openVersionHistoryDialog, setOpenVersionHistoryDialog] = useState(false);
   const [versions, setVersions] = useState([]);
   const [loadingVersions, setLoadingVersions] = useState(false);
+  const [generatingDiagram, setGeneratingDiagram] = useState(false);
 
   // Datos de ejemplo para el documento
   const [document, setDocument] = useState({
@@ -573,6 +576,7 @@ const DocumentEditor = () => {
     if (textSelected && textSelected.trim().length > 0) {
       try {
         setOpenDiagramDialog(false);
+        setGeneratingDiagram(true);
 
         // Llamar a la API para generar el diagrama
         const response = await standardsService.generateDiagram({
@@ -604,11 +608,13 @@ const DocumentEditor = () => {
           setEditorState(newEditorState);
           setSelectedText('');
           setSelectionAnchor(null);
+          setGeneratingDiagram(false);
           return;
         }
       } catch (error) {
         console.error('Error generando diagrama con IA:', error);
         alert('Error al generar el diagrama. Se usará una plantilla genérica.');
+        setGeneratingDiagram(false);
       }
     }
 
@@ -1525,6 +1531,26 @@ const DocumentEditor = () => {
           <Button onClick={() => setOpenVersionHistoryDialog(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Backdrop para mostrar loading cuando se genera un diagrama */}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+        open={generatingDiagram}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+          Generando diagrama con IA...
+        </Typography>
+        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+          Esto puede tomar unos segundos
+        </Typography>
+      </Backdrop>
     </Box>
   );
 };
