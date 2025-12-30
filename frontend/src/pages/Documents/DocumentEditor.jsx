@@ -193,7 +193,8 @@ const DocumentEditor = () => {
             // Limpiar HTML entities de cada elemento antes de renderizar
             for (let i = 0; i < mermaidElements.length; i++) {
               const element = mermaidElements[i];
-              let graphDefinition = element.textContent || element.innerHTML;
+              // Usar innerHTML en lugar de textContent para preservar los <br>
+              let graphDefinition = element.innerHTML;
 
               // Limpiar tags HTML del código Mermaid
               graphDefinition = graphDefinition
