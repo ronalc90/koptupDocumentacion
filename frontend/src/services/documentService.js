@@ -21,6 +21,11 @@ const documentService = {
     return response.data;
   },
 
+  patch: async (id, documentData) => {
+    const response = await api.patch(`/documents/documents/${id}/`, documentData);
+    return response.data;
+  },
+
   delete: async (id) => {
     const response = await api.delete(`/documents/documents/${id}/`);
     return response.data;

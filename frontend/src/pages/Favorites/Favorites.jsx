@@ -44,7 +44,7 @@ const Favorites = () => {
   // Función para togglear favorito
   const toggleFavorite = async (docId, currentStatus) => {
     try {
-      await documentService.update(docId, { is_favorite: !currentStatus });
+      await documentService.patch(docId, { is_favorite: !currentStatus });
 
       // Actualizar estado local
       setFavorites(prevFavs =>

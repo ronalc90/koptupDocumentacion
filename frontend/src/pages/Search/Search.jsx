@@ -72,7 +72,7 @@ const Search = () => {
     e.stopPropagation();
     try {
       const newFavoriteStatus = !doc.is_favorite;
-      await documentService.update(doc.id, { is_favorite: newFavoriteStatus });
+      await documentService.patch(doc.id, { is_favorite: newFavoriteStatus });
 
       // Actualizar el estado local
       setResults(prevResults =>

@@ -519,7 +519,7 @@ const DocumentEditor = () => {
 
     try {
       const newFavoriteStatus = !isFavorite;
-      await documentService.update(id, { is_favorite: newFavoriteStatus });
+      await documentService.patch(id, { is_favorite: newFavoriteStatus });
       setIsFavorite(newFavoriteStatus);
       setDocument(prev => ({ ...prev, is_favorite: newFavoriteStatus }));
     } catch (error) {

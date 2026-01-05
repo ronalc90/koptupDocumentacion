@@ -148,7 +148,7 @@ const Documents = () => {
     e.stopPropagation(); // Evitar que se navegue al documento
     try {
       const newFavoriteStatus = !currentStatus;
-      await documentService.update(docId, { is_favorite: newFavoriteStatus });
+      await documentService.patch(docId, { is_favorite: newFavoriteStatus });
 
       // Actualizar el documento en el estado local
       setDocuments(prevDocs =>
