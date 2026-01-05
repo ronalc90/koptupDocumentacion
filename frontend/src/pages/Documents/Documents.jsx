@@ -24,7 +24,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ArrowBack, Add, Folder, Description } from '@mui/icons-material';
+import { ArrowBack, Add, Folder, Description, Star, StarBorder } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { can } from '../../utils/permissions';
 import { useTheme } from '@mui/material/styles';
@@ -141,6 +141,24 @@ const Documents = () => {
     } catch (e) {
       console.error('Error al crear documento:', e);
       toast.error('No se pudo crear el documento');
+    }
+  };
+
+  const handleToggleFavorite = async (e, docId, currentStatus) => {
+    e.stopPropagation(); // Evitar que se navegue al documento
+    try {
+      const newFavoriteStatus = !currentStatus;
+      await documentService.update(docId, { is_favorite: newFavoriteStatus });
+
+      // Actualizar el documento en el estado local
+      setDocuments(prevDocs =>
+        prevDocs.map(doc =>
+          doc.id === docId ? { ...doc, is_favorite: newFavoriteStatus } : doc
+        )
+      );
+    } catch (error) {
+      console.error('Error actualizando favorito:', error);
+      toast.error('No se pudo actualizar el favorito');
     }
   };
 
@@ -320,16 +338,30 @@ const Documents = () => {
                   <Typography variant="h6" sx={{ fontWeight: 600, flex: 1, pr: 1 }}>
                     {doc.title}
                   </Typography>
-                  <Chip
-                    label={`v${doc.version}`}
-                    size="small"
-                    sx={{
-                      fontSize: '0.7rem',
-                      height: 20,
-                      bgcolor: 'rgba(0, 0, 0, 0.06)',
-                      fontWeight: 500,
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleToggleFavorite(e, doc.id, doc.is_favorite)}
+                      sx={{
+                        color: doc.is_favorite ? '#ffa726' : '#bdbdbd',
+                        '&:hover': {
+                          color: doc.is_favorite ? '#ff9800' : '#757575',
+                        },
+                      }}
+                    >
+                      {doc.is_favorite ? <Star fontSize="small" /> : <StarBorder fontSize="small" />}
+                    </IconButton>
+                    <Chip
+                      label={`v${doc.version}`}
+                      size="small"
+                      sx={{
+                        fontSize: '0.7rem',
+                        height: 20,
+                        bgcolor: 'rgba(0, 0, 0, 0.06)',
+                        fontWeight: 500,
+                      }}
+                    />
+                  </Box>
                 </Box>
 
                 {doc.document_type_name && (
