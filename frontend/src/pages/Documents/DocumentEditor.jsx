@@ -527,6 +527,20 @@ const DocumentEditor = () => {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    if (id === 'new') return; // No permitir cambio de estado en documentos nuevos
+
+    try {
+      setEditedStatus(newStatus);
+      await documentService.update(id, { status: newStatus });
+      setDocument(prev => ({ ...prev, status: newStatus }));
+    } catch (error) {
+      console.error('Error actualizando estado:', error);
+      // Revertir en caso de error
+      setEditedStatus(document.status || 'EN_REVISION');
+    }
+  };
+
   const handleCreateChild = () => {
     if (newChildTitle.trim()) {
       // Crear nuevo documento hijo
@@ -1219,7 +1233,7 @@ const DocumentEditor = () => {
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <Select
               value={editedStatus}
-              onChange={(e) => setEditedStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               sx={{
                 borderRadius: 2,
                 '& .MuiOutlinedInput-notchedOutline': {
