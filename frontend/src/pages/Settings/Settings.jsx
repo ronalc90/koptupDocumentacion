@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -12,27 +12,97 @@ import {
   TextField,
   Button,
   Avatar,
-  IconButton,
   Tabs,
   Tab,
+  Snackbar,
+  Alert,
 } from '@mui/material';
-import { Edit, Notifications, Security, Palette, Language } from '@mui/icons-material';
+import authService from '../../services/authService';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    autoSave: true,
-    darkMode: false,
-    language: 'es',
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load user info from localStorage (stored during login)
+  const [userInfo, setUserInfo] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      return {
+        firstName: user.first_name || user.name || 'Usuario',
+        lastName: user.last_name || '',
+        email: user.email || 'usuario@ejemplo.com',
+        role: user.role || 'DEV',
+      };
+    }
+    return {
+      firstName: 'Usuario',
+      lastName: 'Demo',
+      email: 'usuario@ejemplo.com',
+      role: 'DEV',
+    };
   });
 
-  const handleSettingChange = (setting) => {
-    setSettings((prev) => ({
+  // Load dark mode setting from localStorage
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    return savedDarkMode === 'true';
+  });
+
+  // Load user data from API
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await authService.me();
+        setUserInfo({
+          firstName: userData.first_name || userData.name || 'Usuario',
+          lastName: userData.last_name || '',
+          email: userData.email || 'usuario@ejemplo.com',
+          role: userData.role || 'DEV',
+        });
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  // Save dark mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+  }, [darkMode]);
+
+  const handleUserInfoChange = (field, value) => {
+    setUserInfo((prev) => ({
       ...prev,
-      [setting]: !prev[setting],
+      [field]: value,
     }));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      // Update localStorage user
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = {
+        ...currentUser,
+        first_name: userInfo.firstName,
+        last_name: userInfo.lastName,
+        email: userInfo.email,
+        name: `${userInfo.firstName} ${userInfo.lastName}`.trim(),
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
+
+  const handleDarkModeToggle = () => {
+    setDarkMode(!darkMode);
   };
 
   const TabPanel = ({ children, value, index }) => (
@@ -57,60 +127,66 @@ const Settings = () => {
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab label="Perfil" />
-          <Tab label="Notificaciones" />
           <Tab label="Apariencia" />
-          <Tab label="Seguridad" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
           {/* Profile Tab */}
           <TabPanel value={activeTab} index={0}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
-              <Box sx={{ position: 'relative' }}>
-                <Avatar
-                  sx={{
-                    width: 100,
-                    height: 100,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  }}
-                >
-                  U
-                </Avatar>
-                <IconButton
-                  size="small"
-                  sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    bgcolor: 'white',
-                    boxShadow: 1,
-                  }}
-                >
-                  <Edit fontSize="small" />
-                </IconButton>
-              </Box>
+              <Avatar
+                sx={{
+                  width: 100,
+                  height: 100,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  fontSize: 40,
+                  fontWeight: 600,
+                }}
+              >
+                {userInfo.firstName.charAt(0).toUpperCase()}
+              </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Usuario
+                  {userInfo.firstName} {userInfo.lastName}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
-                  usuario@ejemplo.com
+                  {userInfo.email}
                 </Typography>
               </Box>
             </Box>
 
-            <TextField fullWidth label="Nombre" defaultValue="Usuario" sx={{ mb: 2 }} />
-            <TextField fullWidth label="Apellido" defaultValue="Ejemplo" sx={{ mb: 2 }} />
+            <TextField
+              fullWidth
+              label="Nombre"
+              value={userInfo.firstName}
+              onChange={(e) => handleUserInfoChange('firstName', e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Apellido"
+              value={userInfo.lastName}
+              onChange={(e) => handleUserInfoChange('lastName', e.target.value)}
+              sx={{ mb: 2 }}
+            />
             <TextField
               fullWidth
               label="Email"
-              defaultValue="usuario@ejemplo.com"
+              value={userInfo.email}
+              onChange={(e) => handleUserInfoChange('email', e.target.value)}
               sx={{ mb: 2 }}
             />
-            <TextField fullWidth label="Organización" defaultValue="Mi Empresa" sx={{ mb: 3 }} />
+            <TextField
+              fullWidth
+              label="Rol"
+              value={userInfo.role}
+              disabled
+              sx={{ mb: 3 }}
+            />
 
             <Button
               variant="contained"
+              onClick={handleSaveProfile}
               sx={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 textTransform: 'none',
@@ -120,118 +196,44 @@ const Settings = () => {
             </Button>
           </TabPanel>
 
-          {/* Notifications Tab */}
+          {/* Appearance Tab */}
           <TabPanel value={activeTab} index={1}>
             <List>
               <ListItem>
                 <ListItemText
-                  primary="Notificaciones por Email"
-                  secondary="Recibe actualizaciones por correo electrónico"
+                  primary="Modo Oscuro"
+                  secondary="Activa el tema oscuro en toda la aplicación"
                 />
                 <ListItemSecondaryAction>
                   <Switch
-                    checked={settings.emailNotifications}
-                    onChange={() => handleSettingChange('emailNotifications')}
+                    checked={darkMode}
+                    onChange={handleDarkModeToggle}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
               <Divider />
               <ListItem>
                 <ListItemText
-                  primary="Notificaciones Push"
-                  secondary="Recibe notificaciones en el navegador"
+                  primary="Idioma"
+                  secondary="Español (es-ES)"
                 />
-                <ListItemSecondaryAction>
-                  <Switch
-                    checked={settings.pushNotifications}
-                    onChange={() => handleSettingChange('pushNotifications')}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Auto-guardado"
-                  secondary="Guarda automáticamente los cambios en documentos"
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    checked={settings.autoSave}
-                    onChange={() => handleSettingChange('autoSave')}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-            </List>
-          </TabPanel>
-
-          {/* Appearance Tab */}
-          <TabPanel value={activeTab} index={2}>
-            <List>
-              <ListItem>
-                <ListItemText primary="Modo Oscuro" secondary="Usa tema oscuro en la interfaz" />
-                <ListItemSecondaryAction>
-                  <Switch
-                    checked={settings.darkMode}
-                    onChange={() => handleSettingChange('darkMode')}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText primary="Idioma" secondary="Español" />
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Densidad de Interfaz"
-                  secondary="Espaciado entre elementos"
-                />
-              </ListItem>
-            </List>
-          </TabPanel>
-
-          {/* Security Tab */}
-          <TabPanel value={activeTab} index={3}>
-            <List>
-              <ListItem>
-                <ListItemText
-                  primary="Cambiar Contraseña"
-                  secondary="Actualiza tu contraseña de acceso"
-                />
-                <ListItemSecondaryAction>
-                  <Button variant="outlined" size="small">
-                    Cambiar
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Autenticación de Dos Factores"
-                  secondary="Añade una capa extra de seguridad"
-                />
-                <ListItemSecondaryAction>
-                  <Button variant="outlined" size="small">
-                    Activar
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText
-                  primary="Sesiones Activas"
-                  secondary="Gestiona tus sesiones activas"
-                />
-                <ListItemSecondaryAction>
-                  <Button variant="outlined" size="small">
-                    Ver
-                  </Button>
-                </ListItemSecondaryAction>
               </ListItem>
             </List>
           </TabPanel>
         </Box>
       </Paper>
+
+      {/* Success notification */}
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={3000}
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+          Cambios guardados correctamente
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

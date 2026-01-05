@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFormik } from 'formik';
@@ -12,10 +12,11 @@ import {
   Button,
   CircularProgress,
   Link as MuiLink,
+  Alert,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { login } from '../../store/slices/authSlice';
+import { login, clearError } from '../../store/slices/authSlice';
 
 const validationSchema = yup.object({
   email: yup
@@ -31,6 +32,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, error } = useSelector((state) => state.auth);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,9 +42,36 @@ const Login = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error('Credenciales inválidas');
+      let message = 'Credenciales inválidas';
+
+      if (typeof error === 'object') {
+        if (error.detail) {
+          message = error.detail;
+        } else if (error.email) {
+          message = `Email: ${Array.isArray(error.email) ? error.email.join(', ') : error.email}`;
+        } else if (error.password) {
+          message = `Contraseña: ${Array.isArray(error.password) ? error.password.join(', ') : error.password}`;
+        } else if (error.non_field_errors) {
+          message = Array.isArray(error.non_field_errors) ? error.non_field_errors.join(', ') : error.non_field_errors;
+        }
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+
+      setErrorMessage(message);
+      toast.error(message);
+    } else {
+      setErrorMessage('');
     }
   }, [error]);
+
+  useEffect(() => {
+    // Limpiar errores al desmontar
+    return () => {
+      dispatch(clearError());
+      setErrorMessage('');
+    };
+  }, [dispatch]);
 
   const formik = useFormik({
     initialValues: {
@@ -138,6 +167,12 @@ const Login = () => {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Ingresa tus credenciales para continuar
             </Typography>
+
+            {errorMessage && (
+              <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+                {errorMessage}
+              </Alert>
+            )}
 
             <Box
               component="form"

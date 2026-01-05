@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFormik } from 'formik';
@@ -14,16 +14,23 @@ import {
   AppBar,
   Toolbar,
   Link as MuiLink,
+  Alert,
 } from '@mui/material';
 import { toast } from 'react-toastify';
-import { register } from '../../store/slices/authSlice';
+import { register, clearError } from '../../store/slices/authSlice';
 import { Link } from 'react-router-dom';
 
 const validationSchema = yup.object({
   first_name: yup.string().required('El nombre es requerido'),
   last_name: yup.string().required('El apellido es requerido'),
   email: yup.string().email('Email inválido').required('El email es requerido'),
-  password: yup.string().min(6, 'Mínimo 6 caracteres').required('La contraseña es requerida'),
+  password: yup
+    .string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
+    .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
+    .matches(/[0-9]/, 'Debe contener al menos un número')
+    .required('La contraseña es requerida'),
   password2: yup.string().oneOf([yup.ref('password')], 'Las contraseñas no coinciden').required('Confirma la contraseña'),
 });
 
@@ -31,6 +38,7 @@ const Register = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, error } = useSelector((state) => state.auth);
+  const [backendErrors, setBackendErrors] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,9 +48,33 @@ const Register = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error('No se pudo registrar');
+      // Manejar diferentes tipos de errores del backend
+      if (typeof error === 'object') {
+        setBackendErrors(error);
+
+        // Mostrar errores específicos de campos
+        if (error.password) {
+          toast.error(`Contraseña: ${Array.isArray(error.password) ? error.password.join(', ') : error.password}`);
+        } else if (error.email) {
+          toast.error(`Email: ${Array.isArray(error.email) ? error.email.join(', ') : error.email}`);
+        } else if (error.detail) {
+          toast.error(error.detail);
+        } else {
+          toast.error('Error en el registro. Verifica los datos ingresados.');
+        }
+      } else {
+        toast.error(error || 'No se pudo registrar');
+      }
     }
   }, [error]);
+
+  useEffect(() => {
+    // Limpiar errores al desmontar
+    return () => {
+      dispatch(clearError());
+      setBackendErrors(null);
+    };
+  }, [dispatch]);
 
   const formik = useFormik({
     initialValues: {
@@ -79,6 +111,26 @@ const Register = () => {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Complete sus datos para comenzar
             </Typography>
+
+            {backendErrors && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {backendErrors.password && (
+                  <div>
+                    <strong>Contraseña:</strong> {Array.isArray(backendErrors.password) ? backendErrors.password.join(', ') : backendErrors.password}
+                  </div>
+                )}
+                {backendErrors.email && (
+                  <div>
+                    <strong>Email:</strong> {Array.isArray(backendErrors.email) ? backendErrors.email.join(', ') : backendErrors.email}
+                  </div>
+                )}
+                {backendErrors.detail && <div>{backendErrors.detail}</div>}
+                {!backendErrors.password && !backendErrors.email && !backendErrors.detail && (
+                  <div>Error en el registro. Verifica los datos ingresados.</div>
+                )}
+              </Alert>
+            )}
+
             <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 3 }}>
               <TextField
                 fullWidth
@@ -123,7 +175,11 @@ const Register = () => {
                 value={formik.values.password}
                 onChange={formik.handleChange}
                 error={formik.touched.password && Boolean(formik.errors.password)}
-                helperText={formik.touched.password && formik.errors.password}
+                helperText={
+                  formik.touched.password && formik.errors.password
+                    ? formik.errors.password
+                    : 'Mínimo 8 caracteres, una mayúscula, una minúscula y un número'
+                }
               />
               <TextField
                 fullWidth
