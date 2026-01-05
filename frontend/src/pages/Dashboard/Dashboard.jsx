@@ -72,6 +72,8 @@ import {
   CheckCircle,
   Palette,
   Settings,
+  Star,
+  StarBorder,
 } from '@mui/icons-material';
 import documentService from '../../services/documentService';
 import workspaceService from '../../services/workspaceService';
@@ -226,6 +228,23 @@ const Dashboard = () => {
     setSelectedDoc(null);
   };
 
+  const handleToggleFavorite = async (e, doc) => {
+    e.stopPropagation();
+    try {
+      const newFavoriteStatus = !doc.is_favorite;
+      await documentService.update(doc.id, { is_favorite: newFavoriteStatus });
+
+      // Actualizar el estado local
+      setDocuments(prevDocs =>
+        prevDocs.map(d =>
+          d.id === doc.id ? { ...d, is_favorite: newFavoriteStatus } : d
+        )
+      );
+    } catch (error) {
+      console.error('Error actualizando favorito:', error);
+    }
+  };
+
   // Renderizar un documento
   const renderDocumentItem = (doc, level = 1) => {
     const paddingLeft = 2 + level * 3;
@@ -270,6 +289,18 @@ const Dashboard = () => {
               }}
             />
           )}
+
+          <IconButton
+            size="small"
+            onClick={(e) => handleToggleFavorite(e, doc)}
+            sx={{
+              opacity: 0.6,
+              '&:hover': { opacity: 1 },
+              color: doc.is_favorite ? '#ffa726' : 'inherit',
+            }}
+          >
+            {doc.is_favorite ? <Star fontSize="small" /> : <StarBorder fontSize="small" />}
+          </IconButton>
 
           <IconButton
             size="small"

@@ -26,7 +26,9 @@ const Favorites = () => {
     const loadFavorites = async () => {
       setLoading(true);
       try {
-        const allDocs = await documentService.getAll();
+        const response = await documentService.getAll();
+        // La API retorna un objeto con 'results', no un array directo
+        const allDocs = Array.isArray(response) ? response : (response?.results || []);
         const favoriteDocs = allDocs.filter(doc => doc.is_favorite === true);
         setFavorites(favoriteDocs);
       } catch (error) {

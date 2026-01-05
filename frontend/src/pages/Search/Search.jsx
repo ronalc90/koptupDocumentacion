@@ -20,35 +20,50 @@ import documentService from '../../services/documentService';
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   // Buscar documentos cuando cambia el query
   useEffect(() => {
     const searchDocuments = async () => {
+      console.log('🔍 Iniciando búsqueda...');
       setLoading(true);
+      setError(null);
       try {
         // Obtener todos los documentos
         const allDocs = await documentService.getAll();
+        console.log('📄 Respuesta completa:', allDocs);
+        console.log('📄 Tipo de respuesta:', typeof allDocs);
+        console.log('📄 Es array?:', Array.isArray(allDocs));
+
+        // La API puede retornar un objeto con 'results' o directamente un array
+        const documents = Array.isArray(allDocs) ? allDocs : (allDocs?.results || []);
+        console.log('📄 Documentos procesados:', documents.length);
 
         // Si no hay query, mostrar todos los documentos
         if (!searchQuery.trim()) {
-          setResults(allDocs);
+          setResults(documents);
+          console.log('✅ Mostrando todos los documentos:', documents.length);
         } else {
           // Filtrar por título o contenido que contenga el query
-          const filtered = allDocs.filter(doc => {
+          const filtered = documents.filter(doc => {
             const searchLower = searchQuery.toLowerCase();
             const titleMatch = doc.title?.toLowerCase().includes(searchLower);
             const contentMatch = doc.content?.toLowerCase().includes(searchLower);
             return titleMatch || contentMatch;
           });
           setResults(filtered);
+          console.log('✅ Resultados filtrados:', filtered.length);
         }
       } catch (error) {
-        console.error('Error buscando documentos:', error);
+        console.error('❌ Error buscando documentos:', error);
+        console.error('Error completo:', error.response || error);
+        setError(error.message || 'Error al cargar documentos');
         setResults([]);
       } finally {
         setLoading(false);
+        console.log('⏹️ Búsqueda finalizada');
       }
     };
 
@@ -94,6 +109,14 @@ const Search = () => {
         return 'En revisión';
     }
   };
+
+  if (loading && results.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -160,9 +183,10 @@ const Search = () => {
                         <Description sx={{ color: '#667eea' }} />
                       </Box>
                       <ListItemText
+                        disableTypography
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
                               {result.title}
                             </Typography>
                             {result.workspace_name && (
@@ -183,10 +207,10 @@ const Search = () => {
                         }
                         secondary={
                           <Box>
-                            <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                            <Typography variant="body2" component="div" color="textSecondary" sx={{ mb: 0.5 }}>
                               {getExcerpt(result.content)}
                             </Typography>
-                            <Typography variant="caption" color="textSecondary">
+                            <Typography variant="caption" component="div" color="textSecondary">
                               Modificado: {new Date(result.updated_at).toLocaleDateString('es-ES', {
                                 year: 'numeric',
                                 month: 'short',
@@ -217,7 +241,7 @@ const Search = () => {
         </Box>
       )}
 
-      {!loading && results.length === 0 && (
+      {!loading && results.length === 0 && !error && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <SearchIcon sx={{ fontSize: 64, color: '#e0e0e0', mb: 2 }} />
           <Typography variant="h6" color="textSecondary">
@@ -228,6 +252,18 @@ const Search = () => {
               ? 'Intenta con otros términos de búsqueda'
               : 'Crea algunos documentos para verlos aquí'
             }
+          </Typography>
+        </Box>
+      )}
+
+      {error && (
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <SearchIcon sx={{ fontSize: 64, color: '#f44336', mb: 2 }} />
+          <Typography variant="h6" color="error">
+            Error al cargar documentos
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            {error}
           </Typography>
         </Box>
       )}

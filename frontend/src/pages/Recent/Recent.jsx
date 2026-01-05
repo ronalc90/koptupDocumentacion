@@ -25,7 +25,9 @@ const Recent = () => {
     const loadRecentDocuments = async () => {
       setLoading(true);
       try {
-        const allDocs = await documentService.getAll();
+        const response = await documentService.getAll();
+        // La API retorna un objeto con 'results', no un array directo
+        const allDocs = Array.isArray(response) ? response : (response?.results || []);
 
         // Ordenar por fecha de modificación más reciente
         const sortedDocs = allDocs.sort((a, b) => {
