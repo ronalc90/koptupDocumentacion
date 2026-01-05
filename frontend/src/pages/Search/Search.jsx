@@ -13,8 +13,9 @@ import {
   Divider,
   Paper,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
-import { Search as SearchIcon, Description, Folder } from '@mui/icons-material';
+import { Search as SearchIcon, Description, Folder, Star, StarBorder } from '@mui/icons-material';
 import documentService from '../../services/documentService';
 
 const Search = () => {
@@ -65,6 +66,23 @@ const Search = () => {
 
   const handleDocumentClick = (docId) => {
     navigate(`/documents/${docId}`);
+  };
+
+  const handleToggleFavorite = async (e, doc) => {
+    e.stopPropagation();
+    try {
+      const newFavoriteStatus = !doc.is_favorite;
+      await documentService.update(doc.id, { is_favorite: newFavoriteStatus });
+
+      // Actualizar el estado local
+      setResults(prevResults =>
+        prevResults.map(d =>
+          d.id === doc.id ? { ...d, is_favorite: newFavoriteStatus } : d
+        )
+      );
+    } catch (error) {
+      console.error('Error actualizando favorito:', error);
+    }
   };
 
   // Función para extraer un excerpt del contenido
@@ -159,7 +177,23 @@ const Search = () => {
             <List>
               {results.map((result, index) => (
                 <Box key={result.id}>
-                  <ListItem disablePadding>
+                  <ListItem
+                    disablePadding
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => handleToggleFavorite(e, result)}
+                        sx={{
+                          color: result.is_favorite ? '#ffa726' : '#bdbdbd',
+                          '&:hover': {
+                            color: result.is_favorite ? '#ff9800' : '#757575',
+                          },
+                        }}
+                      >
+                        {result.is_favorite ? <Star /> : <StarBorder />}
+                      </IconButton>
+                    }
+                  >
                     <ListItemButton
                       onClick={() => handleDocumentClick(result.id)}
                       sx={{

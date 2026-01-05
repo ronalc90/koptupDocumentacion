@@ -11,8 +11,9 @@ import {
   Chip,
   Paper,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
-import { Description, History } from '@mui/icons-material';
+import { Description, History, Star, StarBorder } from '@mui/icons-material';
 import documentService from '../../services/documentService';
 
 const Recent = () => {
@@ -51,6 +52,23 @@ const Recent = () => {
 
   const handleDocumentClick = (docId) => {
     navigate(`/documents/${docId}`);
+  };
+
+  const handleToggleFavorite = async (e, doc) => {
+    e.stopPropagation();
+    try {
+      const newFavoriteStatus = !doc.is_favorite;
+      await documentService.update(doc.id, { is_favorite: newFavoriteStatus });
+
+      // Actualizar el estado local
+      setRecentItems(prevItems =>
+        prevItems.map(d =>
+          d.id === doc.id ? { ...d, is_favorite: newFavoriteStatus } : d
+        )
+      );
+    } catch (error) {
+      console.error('Error actualizando favorito:', error);
+    }
   };
 
   // Función para obtener el color del chip según el estado
@@ -127,7 +145,24 @@ const Recent = () => {
         <Paper>
           <List>
             {recentItems.map((item) => (
-              <ListItem key={item.id} disablePadding>
+              <ListItem
+                key={item.id}
+                disablePadding
+                secondaryAction={
+                  <IconButton
+                    edge="end"
+                    onClick={(e) => handleToggleFavorite(e, item)}
+                    sx={{
+                      color: item.is_favorite ? '#ffa726' : '#bdbdbd',
+                      '&:hover': {
+                        color: item.is_favorite ? '#ff9800' : '#757575',
+                      },
+                    }}
+                  >
+                    {item.is_favorite ? <Star /> : <StarBorder />}
+                  </IconButton>
+                }
+              >
                 <ListItemButton onClick={() => handleDocumentClick(item.id)}>
                   <ListItemIcon>
                     <Description sx={{ color: '#667eea' }} />
