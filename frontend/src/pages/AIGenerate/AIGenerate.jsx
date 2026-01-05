@@ -57,6 +57,7 @@ const AIGenerate = () => {
   const [selectedWorkspace, setSelectedWorkspace] = useState('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loadingStandards, setLoadingStandards] = useState(true);
 
   useEffect(() => {
     fetchStandards();
@@ -64,12 +65,104 @@ const AIGenerate = () => {
   }, []);
 
   const fetchStandards = async () => {
+    setLoadingStandards(true);
     try {
       const data = await standardsService.getAll({ is_active: true });
-      setStandards(data.results || data || []);
+      const standardsList = data.results || data || [];
+
+      // Si no hay estándares del backend, usar valores por defecto
+      if (standardsList.length === 0) {
+        loadDefaultStandards();
+      } else {
+        setStandards(standardsList);
+      }
     } catch (err) {
       console.error('Error al cargar estándares:', err);
+      // Si falla la llamada, cargar valores por defecto
+      loadDefaultStandards();
+    } finally {
+      setLoadingStandards(false);
     }
+  };
+
+  const loadDefaultStandards = () => {
+    // Estándares por defecto cuando no hay en el backend
+    const defaultStandards = [
+      {
+        id: 'default-1',
+        name: 'Documentación de Infraestructura',
+        description: 'Documentación técnica sobre arquitectura, infraestructura y configuración de sistemas',
+        category: 'TECHNICAL_SPEC',
+        icon: '🏗️',
+        color: '#1976D2',
+        is_default: true,
+      },
+      {
+        id: 'default-2',
+        name: 'Guías de Administración',
+        description: 'Manuales para administradores del sistema con procedimientos y configuraciones',
+        category: 'USER_MANUAL',
+        icon: '⚙️',
+        color: '#F57C00',
+        is_default: true,
+      },
+      {
+        id: 'default-3',
+        name: 'Procedimientos de Despliegue',
+        description: 'Documentación sobre procesos de despliegue, CI/CD y DevOps',
+        category: 'PROCESS',
+        icon: '🚀',
+        color: '#388E3C',
+        is_default: true,
+      },
+      {
+        id: 'default-4',
+        name: 'Guías de Desarrollo',
+        description: 'Documentación para desarrolladores sobre APIs, componentes y arquitectura',
+        category: 'API_DOC',
+        icon: '💻',
+        color: '#7B1FA2',
+        is_default: true,
+      },
+      {
+        id: 'default-5',
+        name: 'Casos de Uso',
+        description: 'Documentación de casos de uso con flujos, actores y escenarios',
+        category: 'USE_CASE',
+        icon: '📋',
+        color: '#0288D1',
+        is_default: true,
+      },
+      {
+        id: 'default-6',
+        name: 'Diagramas UML',
+        description: 'Documentación con diagramas UML (clases, secuencia, componentes)',
+        category: 'UML_DIAGRAM',
+        icon: '📊',
+        color: '#D32F2F',
+        is_default: true,
+      },
+      {
+        id: 'default-7',
+        name: 'Preguntas Frecuentes (FAQ)',
+        description: 'Base de conocimiento con preguntas y respuestas frecuentes',
+        category: 'FAQ',
+        icon: '❓',
+        color: '#C2185B',
+        is_default: true,
+      },
+      {
+        id: 'default-8',
+        name: 'Manuales de Usuario',
+        description: 'Guías paso a paso para usuarios finales del sistema',
+        category: 'USER_MANUAL',
+        icon: '📖',
+        color: '#5E35B1',
+        is_default: true,
+      },
+    ];
+
+    setStandards(defaultStandards);
   };
 
   const fetchWorkspaces = async () => {
