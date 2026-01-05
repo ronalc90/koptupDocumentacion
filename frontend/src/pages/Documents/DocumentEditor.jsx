@@ -532,7 +532,7 @@ const DocumentEditor = () => {
 
     try {
       setEditedStatus(newStatus);
-      await documentService.update(id, { status: newStatus });
+      await documentService.patch(id, { status: newStatus });
       setDocument(prev => ({ ...prev, status: newStatus }));
     } catch (error) {
       console.error('Error actualizando estado:', error);
