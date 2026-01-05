@@ -34,6 +34,9 @@ import {
   Popover,
   Backdrop,
   CircularProgress,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   MoreHoriz,
@@ -57,6 +60,8 @@ import {
   ShowChart,
   History,
   Restore,
+  Star,
+  StarBorder,
 } from '@mui/icons-material';
 
 const DocumentEditor = () => {
@@ -107,6 +112,8 @@ const DocumentEditor = () => {
 
   const [editedTitle, setEditedTitle] = useState(document.title);
   const [editedContent, setEditedContent] = useState(document.content);
+  const [editedStatus, setEditedStatus] = useState(document.status || 'EN_REVISION');
+  const [isFavorite, setIsFavorite] = useState(document.is_favorite || false);
   const [editorState, setEditorState] = useState(() => EditorState.createEmpty());
 
   // Cargar documento desde la API o localStorage como fallback
@@ -121,8 +128,10 @@ const DocumentEditor = () => {
         // Primero intentar cargar desde la API
         const docData = await documentService.getById(id);
         setDocument({
+          ...docData,
           title: docData.title,
           content: docData.content,
+          status: docData.status,
           project: docData.project, // Guardar project_id para actualizaciones
           path: [{ name: 'Inicio', path: '/' }],
           lastModified: new Date(docData.updated_at).toLocaleString('es-ES'),
@@ -130,6 +139,8 @@ const DocumentEditor = () => {
         });
         setEditedTitle(docData.title);
         setEditedContent(docData.content);
+        setEditedStatus(docData.status || 'EN_REVISION');
+        setIsFavorite(docData.is_favorite || false);
 
         // Convertir contenido a EditorState
         if (docData.content) {
@@ -442,6 +453,7 @@ const DocumentEditor = () => {
         const updateData = {
           title: editedTitle,
           content: htmlContent,
+          status: editedStatus,
         };
 
         // Solo incluir project si existe y es un número (ID)
@@ -497,7 +509,21 @@ const DocumentEditor = () => {
       // Si es un documento existente, solo cancelar edición
       setEditedTitle(document.title);
       setEditedContent(document.content);
+      setEditedStatus(document.status || 'EN_REVISION');
       setIsEditing(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (id === 'new') return; // No permitir favoritos en documentos nuevos
+
+    try {
+      const newFavoriteStatus = !isFavorite;
+      await documentService.update(id, { is_favorite: newFavoriteStatus });
+      setIsFavorite(newFavoriteStatus);
+      setDocument(prev => ({ ...prev, is_favorite: newFavoriteStatus }));
+    } catch (error) {
+      console.error('Error actualizando favorito:', error);
     }
   };
 
@@ -1142,7 +1168,7 @@ const DocumentEditor = () => {
         </Typography>
       </Breadcrumbs>
 
-      {/* Title */}
+      {/* Title and Status */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
         {isEditing ? (
           <TextField
@@ -1171,6 +1197,56 @@ const DocumentEditor = () => {
           >
             {document.title || 'Sin título'}
           </Typography>
+        )}
+
+        {/* Favorite Button */}
+        {id !== 'new' && (
+          <IconButton
+            onClick={handleToggleFavorite}
+            sx={{
+              color: isFavorite ? '#ffa726' : '#bdbdbd',
+              '&:hover': {
+                color: isFavorite ? '#ff9800' : '#757575',
+              },
+            }}
+          >
+            {isFavorite ? <Star /> : <StarBorder />}
+          </IconButton>
+        )}
+
+        {/* Status Selector */}
+        {id !== 'new' && (
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              value={editedStatus}
+              onChange={(e) => setEditedStatus(e.target.value)}
+              sx={{
+                borderRadius: 2,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor:
+                    editedStatus === 'APROBADO' ? '#4caf50' :
+                    editedStatus === 'RECHAZADO' ? '#f44336' :
+                    '#ff9800',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor:
+                    editedStatus === 'APROBADO' ? '#4caf50' :
+                    editedStatus === 'RECHAZADO' ? '#f44336' :
+                    '#ff9800',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor:
+                    editedStatus === 'APROBADO' ? '#4caf50' :
+                    editedStatus === 'RECHAZADO' ? '#f44336' :
+                    '#ff9800',
+                },
+              }}
+            >
+              <MenuItem value="EN_REVISION">En revisión</MenuItem>
+              <MenuItem value="APROBADO">Aprobado</MenuItem>
+              <MenuItem value="RECHAZADO">Rechazado</MenuItem>
+            </Select>
+          </FormControl>
         )}
 
         <Box sx={{ display: 'flex', gap: 1 }}>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -11,37 +12,89 @@ import {
   Chip,
   Divider,
   Paper,
+  CircularProgress,
 } from '@mui/material';
 import { Search as SearchIcon, Description, Folder } from '@mui/icons-material';
+import documentService from '../../services/documentService';
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [results] = useState([
-    {
-      id: 1,
-      title: 'Manual de Usuario v2.0',
-      type: 'document',
-      space: 'Guías de Usuario',
-      excerpt: 'Esta guía proporciona información detallada sobre cómo utilizar la plataforma...',
-      lastModified: '2025-12-20',
-    },
-    {
-      id: 2,
-      title: 'Proceso de Onboarding',
-      type: 'document',
-      space: 'Procesos',
-      excerpt: 'Pasos para integrar nuevos miembros al equipo de desarrollo...',
-      lastModified: '2025-12-18',
-    },
-    {
-      id: 3,
-      title: 'Arquitectura del Sistema',
-      type: 'document',
-      space: 'Documentación Técnica',
-      excerpt: 'Diagrama y descripción de la arquitectura del sistema distribuido...',
-      lastModified: '2025-12-15',
-    },
-  ]);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  // Buscar documentos cuando cambia el query
+  useEffect(() => {
+    const searchDocuments = async () => {
+      if (!searchQuery.trim()) {
+        setResults([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Obtener todos los documentos
+        const allDocs = await documentService.getAll();
+
+        // Filtrar por título o contenido que contenga el query
+        const filtered = allDocs.filter(doc => {
+          const searchLower = searchQuery.toLowerCase();
+          const titleMatch = doc.title?.toLowerCase().includes(searchLower);
+          const contentMatch = doc.content?.toLowerCase().includes(searchLower);
+          return titleMatch || contentMatch;
+        });
+
+        setResults(filtered);
+      } catch (error) {
+        console.error('Error buscando documentos:', error);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Debounce: esperar 500ms antes de buscar
+    const timeoutId = setTimeout(searchDocuments, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const handleDocumentClick = (docId) => {
+    navigate(`/documents/${docId}`);
+  };
+
+  // Función para extraer un excerpt del contenido
+  const getExcerpt = (content, maxLength = 150) => {
+    if (!content) return 'Sin contenido';
+    // Remover tags HTML
+    const text = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  // Función para obtener el color del chip según el estado
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'APROBADO':
+        return { bgcolor: '#e8f5e9', color: '#2e7d32' };
+      case 'RECHAZADO':
+        return { bgcolor: '#ffebee', color: '#c62828' };
+      case 'EN_REVISION':
+      default:
+        return { bgcolor: '#fff3e0', color: '#e65100' };
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'APROBADO':
+        return 'Aprobado';
+      case 'RECHAZADO':
+        return 'Rechazado';
+      case 'EN_REVISION':
+      default:
+        return 'En revisión';
+    }
+  };
 
   return (
     <Box>
@@ -64,6 +117,11 @@ const Search = () => {
                 <SearchIcon />
               </InputAdornment>
             ),
+            endAdornment: loading && (
+              <InputAdornment position="end">
+                <CircularProgress size={20} />
+              </InputAdornment>
+            ),
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
@@ -75,62 +133,89 @@ const Search = () => {
         />
       </Paper>
 
-      {searchQuery && (
+      {searchQuery && !loading && (
         <Box>
           <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
-            {results.length} resultados encontrados
+            {results.length} {results.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
           </Typography>
 
-          <List>
-            {results.map((result, index) => (
-              <Box key={result.id}>
-                <ListItem disablePadding>
-                  <ListItemButton
-                    sx={{
-                      borderRadius: 2,
-                      mb: 1,
-                      '&:hover': {
-                        bgcolor: '#f5f5f5',
-                      },
-                    }}
-                  >
-                    <Box sx={{ mr: 2 }}>
-                      {result.type === 'document' ? (
+          {results.length > 0 ? (
+            <List>
+              {results.map((result, index) => (
+                <Box key={result.id}>
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      onClick={() => handleDocumentClick(result.id)}
+                      sx={{
+                        borderRadius: 2,
+                        mb: 1,
+                        '&:hover': {
+                          bgcolor: '#f5f5f5',
+                        },
+                      }}
+                    >
+                      <Box sx={{ mr: 2 }}>
                         <Description sx={{ color: '#667eea' }} />
-                      ) : (
-                        <Folder sx={{ color: '#764ba2' }} />
-                      )}
-                    </Box>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {result.title}
-                          </Typography>
-                          <Chip label={result.space} size="small" sx={{ bgcolor: '#f0f0f0' }} />
-                        </Box>
-                      }
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-                            {result.excerpt}
-                          </Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            Modificado: {result.lastModified}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  </ListItemButton>
-                </ListItem>
-                {index < results.length - 1 && <Divider sx={{ my: 1 }} />}
-              </Box>
-            ))}
-          </List>
+                      </Box>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              {result.title}
+                            </Typography>
+                            {result.workspace_name && (
+                              <Chip
+                                label={result.workspace_name}
+                                size="small"
+                                sx={{ bgcolor: '#f0f0f0' }}
+                              />
+                            )}
+                            {result.status && (
+                              <Chip
+                                label={getStatusLabel(result.status)}
+                                size="small"
+                                sx={getStatusColor(result.status)}
+                              />
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                              {getExcerpt(result.content)}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              Modificado: {new Date(result.updated_at).toLocaleDateString('es-ES', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                              {result.last_modified_by_name && ` por ${result.last_modified_by_name}`}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                  {index < results.length - 1 && <Divider sx={{ my: 1 }} />}
+                </Box>
+              ))}
+            </List>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <SearchIcon sx={{ fontSize: 64, color: '#e0e0e0', mb: 2 }} />
+              <Typography variant="h6" color="textSecondary">
+                No se encontraron resultados
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Intenta con otros términos de búsqueda
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
-      {!searchQuery && (
+      {!searchQuery && !loading && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <SearchIcon sx={{ fontSize: 64, color: '#e0e0e0', mb: 2 }} />
           <Typography variant="h6" color="textSecondary">

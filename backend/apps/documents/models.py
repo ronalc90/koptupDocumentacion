@@ -196,6 +196,7 @@ class Document(models.Model):
         related_name='locked_documents'
     )
     locked_at = models.DateTimeField(null=True, blank=True)
+    is_favorite = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(

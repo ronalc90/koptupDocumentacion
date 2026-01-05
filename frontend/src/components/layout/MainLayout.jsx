@@ -43,7 +43,6 @@ const drawerWidth = 260;
 
 const menuItems = [
   { text: 'Inicio', icon: <Home />, path: '/' },
-  { text: 'Documentos', icon: <Description />, path: '/documents' },
   { text: 'Espacios', icon: <CreateNewFolder />, path: '/spaces' },
   { text: 'Buscar', icon: <Search />, path: '/search' },
   { text: 'Favoritos', icon: <Star />, path: '/favorites' },
