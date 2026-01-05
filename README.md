@@ -1,42 +1,149 @@
-# Koptup Documentación - Plataforma de Gestión Documental
+# Koptup Documentación - Plataforma de Gestión Documental con IA
 
-Sistema enterprise para centralizar, estandarizar, generar, validar y certificar documentación de proyectos con soporte de IA.
+Sistema enterprise para centralizar, estandarizar, generar, validar y certificar documentación de proyectos con soporte de inteligencia artificial.
 
-## 🏗️ Arquitectura
+## 🌟 Características Principales
 
-### Backend: Django + Django REST Framework
-- Django 5.x
-- Django REST Framework
-- PostgreSQL
-- JWT Authentication
-- Celery + Redis
+- 📝 **Generación de Documentación con IA**: Crea documentación técnica profesional usando OpenAI
+- 📊 **Diagramas Mermaid Automáticos**: Generación inteligente de diagramas técnicos
+- 🎨 **Editor WYSIWYG**: Editor rico con soporte para markdown y renderizado en tiempo real
+- 📂 **Workspaces Organizacionales**: Sistema de organización por espacios de trabajo
+- 🔄 **Control de Versiones**: Historial completo de cambios en documentos
+- 🎯 **8 Tipos de Documentación**: Infraestructura, Administración, Despliegue, APIs, y más
+- 👥 **Multi-usuario**: Sistema de autenticación JWT con roles y permisos
+- 🌐 **Multi-idioma**: Sistema completamente en español
 
-### Frontend: React + Vite
-- React 18
-- Redux Toolkit
-- Material-UI
-- Axios
-- TipTap Editor
+## 🏗️ Arquitectura del Sistema
 
-## 🚀 Inicio Rápido
+### Backend
+- **Framework**: Django 5.0 + Django REST Framework
+- **Base de Datos**: PostgreSQL (producción) / SQLite (desarrollo local)
+- **Autenticación**: JWT (JSON Web Tokens)
+- **IA**: Integración con OpenAI GPT-4
+- **Procesamiento Async**: Celery + Redis (opcional)
 
-### Requisitos Previos
-- Docker y Docker Compose
-- Python 3.11+ (desarrollo local)
-- Node.js 18+ (desarrollo local)
+### Frontend
+- **Framework**: React 18
+- **Build Tool**: Vite 5
+- **UI Library**: Material-UI 5
+- **Editor**: Draft.js (WYSIWYG)
+- **Diagramas**: Mermaid.js
+- **HTTP Client**: Axios
+- **Routing**: React Router v6
 
-### Usando Docker (Recomendado)
+## 📋 Requisitos Previos
+
+### Opción 1: Desarrollo Local (Recomendado para desarrollo)
+- **Python**: 3.10 o superior
+- **Node.js**: 18 o superior
+- **npm**: 9 o superior
+
+### Opción 2: Con Docker
+- **Docker**: 20.10 o superior
+- **Docker Compose**: 2.0 o superior
+
+## 🚀 Instalación y Configuración
+
+### Opción 1: Desarrollo Local (Sin Docker)
+
+#### Paso 1: Clonar el Repositorio
+
+```bash
+# Clonar el proyecto
+git clone https://github.com/ronalc90/koptupDocumentacion.git
+cd "koptupDocumentacion"
+```
+
+#### Paso 2: Configurar el Backend
+
+```bash
+# Navegar a la carpeta del backend
+cd backend
+
+# Crear entorno virtual de Python
+python3 -m venv venv
+
+# Activar el entorno virtual
+# En macOS/Linux:
+source venv/bin/activate
+# En Windows:
+# venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements/development.txt
+
+# Configurar variables de entorno
+# Copiar el archivo de ejemplo (si existe) o crear uno nuevo
+cp .env.example .env  # Si existe
+# O crear un nuevo .env con las siguientes variables:
+cat > .env << EOF
+DJANGO_SETTINGS_MODULE=config.settings.local
+DEBUG=True
+SECRET_KEY=tu-clave-secreta-super-segura-cambiar-en-produccion
+OPENAI_API_KEY=tu-openai-api-key-opcional
+EOF
+
+# Ejecutar migraciones de la base de datos
+DJANGO_SETTINGS_MODULE=config.settings.local python manage.py migrate
+
+# Crear un superusuario (admin)
+DJANGO_SETTINGS_MODULE=config.settings.local python manage.py createsuperuser
+# Sigue las instrucciones en pantalla para crear usuario, email y contraseña
+
+# Iniciar el servidor de desarrollo
+DJANGO_SETTINGS_MODULE=config.settings.local python manage.py runserver
+```
+
+El backend estará disponible en: **http://localhost:8000**
+
+#### Paso 3: Configurar el Frontend
+
+Abre una nueva terminal (mantén el backend corriendo):
+
+```bash
+# Navegar a la carpeta del frontend
+cd frontend
+
+# Instalar dependencias de Node.js
+npm install
+
+# Configurar variables de entorno
+# Copiar el archivo de ejemplo (si existe) o crear uno nuevo
+cp .env.example .env  # Si existe
+# O crear un nuevo .env con:
+cat > .env << EOF
+VITE_API_URL=http://localhost:8000/api/v1
+EOF
+
+# Iniciar el servidor de desarrollo
+npm run dev
+```
+
+El frontend estará disponible en: **http://localhost:3000**
+
+#### Paso 4: Acceder a la Aplicación
+
+1. Abre tu navegador en **http://localhost:3000**
+2. Usa las credenciales del superusuario que creaste en el Paso 2
+3. ¡Comienza a crear documentación!
+
+### Opción 2: Con Docker
 
 ```bash
 # Clonar el repositorio
-cd "Proyecto Documentacion"
+git clone https://github.com/ronalc90/koptupDocumentacion.git
+cd "koptupDocumentacion"
 
-# Copiar archivos de entorno
+# Configurar variables de entorno
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# Levantar servicios
+# Editar backend/.env y agregar tu OPENAI_API_KEY (opcional)
+
+# Levantar todos los servicios
 docker-compose up -d
+
+# Esperar a que los servicios inicien (30-60 segundos)
 
 # Ejecutar migraciones
 docker-compose exec backend python manage.py migrate
@@ -44,184 +151,282 @@ docker-compose exec backend python manage.py migrate
 # Crear superusuario
 docker-compose exec backend python manage.py createsuperuser
 
-# El sistema estará disponible en:
+# Ver logs (opcional)
+docker-compose logs -f
+
+# Acceder a la aplicación
 # Frontend: http://localhost:3000
 # Backend API: http://localhost:8000
 # Admin Django: http://localhost:8000/admin
-# API Docs: http://localhost:8000/swagger
 ```
 
-### Desarrollo Local
+## 📝 Configuración de OpenAI (Opcional)
 
-#### Backend
+Para habilitar la generación de documentación con IA:
+
+1. Obtén una API Key de OpenAI: https://platform.openai.com/api-keys
+2. Agrega la clave en `backend/.env`:
+   ```
+   OPENAI_API_KEY=sk-proj-tu-clave-aqui
+   ```
+3. Reinicia el servidor backend
+
+**Nota**: Sin la API Key de OpenAI, el sistema seguirá funcionando pero usará plantillas genéricas en lugar de generar contenido con IA.
+
+## 🎯 Uso del Sistema
+
+### Crear un Workspace (Espacio de Trabajo)
+
+1. Click en "Espacios" en el menú lateral
+2. Click en el botón "+" para crear un nuevo workspace
+3. Ingresa nombre, descripción y selecciona un tipo
+4. El workspace aparecerá en tu lista
+
+### Generar Documentación con IA
+
+1. Click en "Generar con IA" en el menú lateral
+2. Selecciona el tipo de documentación estándar
+3. Describe lo que necesitas documentar
+4. Click en "Generar Documentación"
+5. Revisa el contenido generado y el diagrama
+6. Guarda el documento en un workspace
+
+### Editar Documentos
+
+1. Accede a un documento desde "Documentos" o desde un Workspace
+2. Click en cualquier parte del contenido para activar el modo edición
+3. Usa la barra de herramientas para dar formato
+4. Los diagramas Mermaid se renderizan automáticamente
+5. Click en "Guardar" para guardar los cambios
+
+### Gestionar Tipos de Workspace
+
+1. Ve a "Administración" → "Tipos de Workspace"
+2. Crea, edita o elimina tipos personalizados
+3. Configura colores e íconos para cada tipo
+4. Los cambios se reflejan inmediatamente en los workspaces
+
+## 📡 API Endpoints Principales
+
+### Autenticación
+```
+POST   /api/v1/auth/token/              - Login (obtener token)
+POST   /api/v1/auth/token/refresh/      - Refresh token
+POST   /api/v1/auth/register/           - Registro de usuario
+GET    /api/v1/auth/users/me/           - Usuario actual
+```
+
+### Workspaces
+```
+GET    /api/v1/documents/workspaces/    - Listar workspaces
+POST   /api/v1/documents/workspaces/    - Crear workspace
+GET    /api/v1/documents/workspaces/:id/ - Detalle workspace
+PUT    /api/v1/documents/workspaces/:id/ - Actualizar workspace
+DELETE /api/v1/documents/workspaces/:id/ - Eliminar workspace
+```
+
+### Documentos
+```
+GET    /api/v1/documents/documents/     - Listar documentos
+POST   /api/v1/documents/documents/     - Crear documento
+GET    /api/v1/documents/documents/:id/ - Detalle documento
+PUT    /api/v1/documents/documents/:id/ - Actualizar documento
+DELETE /api/v1/documents/documents/:id/ - Eliminar documento
+```
+
+### Estándares y Generación IA
+```
+GET    /api/v1/standards/standards/     - Listar estándares de documentación
+POST   /api/v1/standards/generate/      - Generar documentación con IA
+POST   /api/v1/standards/generate-diagram/ - Generar diagrama con IA
+```
+
+### Tipos de Workspace
+```
+GET    /api/v1/documents/workspace-types/ - Listar tipos
+POST   /api/v1/documents/workspace-types/ - Crear tipo
+PUT    /api/v1/documents/workspace-types/:id/ - Actualizar tipo
+DELETE /api/v1/documents/workspace-types/:id/ - Eliminar tipo
+```
+
+## 🛠️ Comandos Útiles
+
+### Backend
 
 ```bash
-cd backend
-
-# Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-
-# Instalar dependencias
-pip install -r requirements/development.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-
-# Ejecutar migraciones
-python manage.py migrate
-
-# Crear superusuario
-python manage.py createsuperuser
+# Activar entorno virtual
+source backend/venv/bin/activate
 
 # Ejecutar servidor
+DJANGO_SETTINGS_MODULE=config.settings.local python backend/manage.py runserver
+
+# Crear migraciones
+DJANGO_SETTINGS_MODULE=config.settings.local python backend/manage.py makemigrations
+
+# Aplicar migraciones
+DJANGO_SETTINGS_MODULE=config.settings.local python backend/manage.py migrate
+
+# Crear superusuario
+DJANGO_SETTINGS_MODULE=config.settings.local python backend/manage.py createsuperuser
+
+# Abrir shell de Django
+DJANGO_SETTINGS_MODULE=config.settings.local python backend/manage.py shell
+
+# Ejecutar tests
+DJANGO_SETTINGS_MODULE=config.settings.local pytest backend/
+```
+
+### Frontend
+
+```bash
+# Instalar dependencias
+cd frontend && npm install
+
+# Ejecutar en desarrollo
+npm run dev
+
+# Build para producción
+npm run build
+
+# Preview del build
+npm run preview
+
+# Linting
+npm run lint
+```
+
+### Docker
+
+```bash
+# Levantar servicios
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Ver logs de un servicio específico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Detener servicios
+docker-compose down
+
+# Detener y eliminar volúmenes (⚠️ borra la base de datos)
+docker-compose down -v
+
+# Rebuild de imágenes
+docker-compose build
+
+# Ejecutar comando en contenedor
+docker-compose exec backend python manage.py migrate
+```
+
+## 🐛 Solución de Problemas
+
+### El backend no inicia
+
+**Error**: `ModuleNotFoundError` o paquetes faltantes
+```bash
+# Reinstalar dependencias
+cd backend
+source venv/bin/activate
+pip install -r requirements/development.txt
+```
+
+**Error**: `connection refused` a PostgreSQL
+```bash
+# Asegúrate de usar la configuración local con SQLite
+export DJANGO_SETTINGS_MODULE=config.settings.local
 python manage.py runserver
 ```
 
-#### Frontend
+### El frontend no carga
 
+**Error**: `ECONNREFUSED` al hacer peticiones
 ```bash
-cd frontend
+# Verifica que el backend esté corriendo en el puerto 8000
+curl http://localhost:8000/api/v1/auth/token/
 
-# Instalar dependencias
-npm install
-
-# Configurar variables de entorno
-cp .env.example .env
-
-# Ejecutar servidor de desarrollo
-npm run dev
+# Verifica la variable de entorno en frontend/.env
+cat frontend/.env
+# Debe contener: VITE_API_URL=http://localhost:8000/api/v1
 ```
 
-## 📦 Módulos del Sistema
+**Error**: Dependencias faltantes
+```bash
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+```
 
-### 1. Users & Auth
-- Gestión de usuarios y organizaciones
-- Autenticación JWT
-- Roles: Admin, PO, Dev, QA, Cliente
+### Los diagramas Mermaid no se renderizan
 
-### 2. Standards
-- Tipos de documentación
-- Plantillas oficiales
-- Reglas de validación
-- Versionado de plantillas
+- Verifica que el documento tenga diagramas con formato correcto
+- Los diagramas deben estar dentro de `<div class="mermaid">...</div>`
+- Abre la consola del navegador para ver errores específicos
 
-### 3. Projects
-- Gestión de proyectos
-- Clientes y metodologías
-- Fases y equipos
-- Estados del proyecto
+### La generación con IA no funciona
 
-### 4. Agile
-- Épicas
-- Historias de usuario
-- Tareas técnicas
-- Sprints
+- Verifica que `OPENAI_API_KEY` esté configurada en `backend/.env`
+- Verifica que tengas créditos disponibles en tu cuenta de OpenAI
+- Revisa los logs del backend: `docker-compose logs -f backend`
 
-### 5. Documents
-- Gestión documental
-- Editor rico
-- Versionado
-- Comentarios y adjuntos
+## 📚 Documentación Adicional
 
-### 6. AI Engine
-- RAG (Retrieval-Augmented Generation)
-- Generación asistida por IA
-- Embeddings de plantillas
-- Logs y feedback
-
-### 7. Validation
-- Validación automática
-- Revisiones QA
-- Issues y checkpoints
-
-### 8. Checklist
-- Checklist de entrega
-- Certificación de proyectos
-- Bloqueos e issues
-
-### 9. Audit
-- Logs de auditoría
-- Historial de aprobaciones
-- Cumplimiento (ISO, SOC2, GDPR)
-- Eventos de seguridad
-
-## 📡 Endpoints API Principales
-
-### Autenticación
-- `POST /api/v1/auth/token/` - Login
-- `POST /api/v1/auth/token/refresh/` - Refresh token
-- `GET /api/v1/auth/users/me/` - Usuario actual
-
-### Proyectos
-- `GET /api/v1/projects/projects/` - Listar proyectos
-- `POST /api/v1/projects/projects/` - Crear proyecto
-- `GET /api/v1/projects/projects/{id}/` - Detalle proyecto
-
-### Documentos
-- `GET /api/v1/documents/documents/` - Listar documentos
-- `POST /api/v1/documents/documents/` - Crear documento
-- `PUT /api/v1/documents/documents/{id}/` - Actualizar documento
-
-### Ágil
-- `GET /api/v1/agile/epics/` - Listar épicas
-- `GET /api/v1/agile/user-stories/` - Listar historias
-- `GET /api/v1/agile/tasks/` - Listar tareas
+- **API Docs (Swagger)**: http://localhost:8000/swagger/
+- **API Docs (ReDoc)**: http://localhost:8000/redoc/
+- **Admin Django**: http://localhost:8000/admin/
 
 ## 🔒 Seguridad
 
-- Autenticación JWT
-- RBAC (Role-Based Access Control)
-- Multi-tenant
-- Logs inmutables
-- CORS configurado
-- Rate limiting (producción)
+- **Autenticación**: JWT con tokens de acceso y refresh
+- **CORS**: Configurado para desarrollo local
+- **CSRF**: Protección habilitada en producción
+- **Rate Limiting**: Implementado en producción
+- **Sanitización**: XSS y SQL injection protegidos por Django
 
-## 📝 Variables de Entorno
+## 📦 Estructura del Proyecto
 
-### Backend (.env)
 ```
-DEBUG=True
-SECRET_KEY=your-secret-key
-DB_NAME=doc_platform
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=localhost
-DB_PORT=5432
-REDIS_URL=redis://localhost:6379/0
-OPENAI_API_KEY=your-openai-key
+koptupDocumentacion/
+├── backend/                    # Django Backend
+│   ├── apps/                   # Aplicaciones Django
+│   │   ├── auth_app/          # Autenticación y usuarios
+│   │   ├── documents/         # Gestión de documentos
+│   │   ├── standards/         # Estándares y generación IA
+│   │   └── workspaces/        # Espacios de trabajo
+│   ├── config/                # Configuración Django
+│   │   ├── settings/          # Settings por ambiente
+│   │   ├── urls.py            # URLs principales
+│   │   └── wsgi.py            # WSGI config
+│   ├── requirements/          # Dependencias Python
+│   ├── manage.py              # Django CLI
+│   └── db.sqlite3             # Base de datos SQLite (local)
+│
+├── frontend/                   # React Frontend
+│   ├── src/
+│   │   ├── components/        # Componentes reutilizables
+│   │   ├── pages/             # Páginas principales
+│   │   ├── services/          # API clients
+│   │   ├── store/             # Redux store
+│   │   ├── utils/             # Utilidades
+│   │   ├── App.jsx            # Componente raíz
+│   │   └── main.jsx           # Entry point
+│   ├── public/                # Archivos estáticos
+│   ├── package.json           # Dependencias Node
+│   └── vite.config.js         # Configuración Vite
+│
+├── docker-compose.yml         # Configuración Docker
+├── .gitignore                 # Archivos ignorados por Git
+└── README.md                  # Este archivo
 ```
-
-### Frontend (.env)
-```
-VITE_API_URL=http://localhost:8000/api/v1
-```
-
-## 🧪 Testing
-
-```bash
-# Backend
-cd backend
-pytest
-
-# Frontend
-cd frontend
-npm test
-```
-
-## 📚 Documentación
-
-- API Docs (Swagger): http://localhost:8000/swagger/
-- API Docs (ReDoc): http://localhost:8000/redoc/
-- Estado del Proyecto: [PROJECT_STATUS.md](PROJECT_STATUS.md)
-- Contacto: [CONTACT.md](CONTACT.md)
 
 ## 🤝 Contribución
 
 1. Fork el proyecto
-2. Crea una rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
+2. Crea una rama feature (`git checkout -b feature/NuevaCaracteristica`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva característica'`)
+4. Push a la rama (`git push origin feature/NuevaCaracteristica`)
 5. Abre un Pull Request
 
 ## 📄 Licencia
@@ -236,16 +441,16 @@ Este es un software comercial de uso exclusivo mediante suscripción pagada.
 - ❌ No se permite distribución, modificación o ingeniería inversa
 - ❌ Todos los derechos reservados por Koptup
 
-Para adquirir una licencia comercial válida, visite: https://koptup.com/pricing
-
-Ver [LICENSE](./LICENSE) para términos completos de la licencia.
-Ver [TERMS_AND_CONDITIONS.md](./TERMS_AND_CONDITIONS.md) para términos de uso del servicio.
+Para adquirir una licencia comercial válida, visite: https://koptup.com
 
 ## 👥 Equipo
 
-Desarrollado por el equipo de documentación corporativa.
+Desarrollado por el equipo de Koptup.
+
+**Repositorio**: https://github.com/ronalc90/koptupDocumentacion
 
 ---
 
-**Estado**: 🟢 En Desarrollo
-**Versión**: 1.0.0-alpha
+**Estado**: 🟢 En Desarrollo Activo
+**Versión**: 1.0.0
+**Última Actualización**: Enero 2026
