@@ -192,8 +192,8 @@ const AIGenerate = () => {
 
       if (result.success) {
         setGeneratedContent(result.data);
-        // Sugerir título basado en el prompt
-        setDocumentTitle(extractTitleFromPrompt(userPrompt));
+        // Sugerir título basado en el contenido generado
+        setDocumentTitle(extractTitleFromContent(result.data.content));
         // Sugerir workspace basado en el estándar
         const standard = standards.find(s => s.id === selectedStandard);
         if (standard) {
@@ -210,10 +210,39 @@ const AIGenerate = () => {
     }
   };
 
-  const extractTitleFromPrompt = (prompt) => {
-    // Extraer las primeras palabras como título sugerido
-    const words = prompt.trim().split(' ');
-    return words.slice(0, Math.min(6, words.length)).join(' ');
+  const extractTitleFromContent = (content) => {
+    // Intentar extraer el primer encabezado H1 o H2 del contenido markdown
+    if (!content) return 'Documento sin título';
+
+    // Buscar primer H1 (# Título)
+    const h1Match = content.match(/^#\s+(.+)$/m);
+    if (h1Match && h1Match[1]) {
+      return h1Match[1].trim();
+    }
+
+    // Buscar primer H2 (## Título)
+    const h2Match = content.match(/^##\s+(.+)$/m);
+    if (h2Match && h2Match[1]) {
+      return h2Match[1].trim();
+    }
+
+    // Si no encuentra encabezados, usar las primeras palabras del contenido
+    // Remover markdown y obtener texto plano
+    const plainText = content
+      .replace(/^#+\s+/gm, '') // Remover marcas de encabezado
+      .replace(/\*\*(.+?)\*\*/g, '$1') // Remover negritas
+      .replace(/\*(.+?)\*/g, '$1') // Remover itálicas
+      .replace(/`(.+?)`/g, '$1') // Remover código inline
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1') // Remover enlaces
+      .replace(/```[\s\S]*?```/g, '') // Remover bloques de código
+      .trim();
+
+    // Tomar primeras 8 palabras
+    const words = plainText.split(/\s+/);
+    const title = words.slice(0, Math.min(8, words.length)).join(' ');
+
+    // Limitar a 80 caracteres
+    return title.length > 80 ? title.substring(0, 77) + '...' : title;
   };
 
   const suggestWorkspace = (standard) => {
