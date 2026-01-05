@@ -26,25 +26,24 @@ const Search = () => {
   // Buscar documentos cuando cambia el query
   useEffect(() => {
     const searchDocuments = async () => {
-      if (!searchQuery.trim()) {
-        setResults([]);
-        return;
-      }
-
       setLoading(true);
       try {
         // Obtener todos los documentos
         const allDocs = await documentService.getAll();
 
-        // Filtrar por título o contenido que contenga el query
-        const filtered = allDocs.filter(doc => {
-          const searchLower = searchQuery.toLowerCase();
-          const titleMatch = doc.title?.toLowerCase().includes(searchLower);
-          const contentMatch = doc.content?.toLowerCase().includes(searchLower);
-          return titleMatch || contentMatch;
-        });
-
-        setResults(filtered);
+        // Si no hay query, mostrar todos los documentos
+        if (!searchQuery.trim()) {
+          setResults(allDocs);
+        } else {
+          // Filtrar por título o contenido que contenga el query
+          const filtered = allDocs.filter(doc => {
+            const searchLower = searchQuery.toLowerCase();
+            const titleMatch = doc.title?.toLowerCase().includes(searchLower);
+            const contentMatch = doc.content?.toLowerCase().includes(searchLower);
+            return titleMatch || contentMatch;
+          });
+          setResults(filtered);
+        }
       } catch (error) {
         console.error('Error buscando documentos:', error);
         setResults([]);
@@ -53,8 +52,8 @@ const Search = () => {
       }
     };
 
-    // Debounce: esperar 500ms antes de buscar
-    const timeoutId = setTimeout(searchDocuments, 500);
+    // Debounce: esperar 300ms antes de buscar (para el query vacío cargar inmediatamente)
+    const timeoutId = setTimeout(searchDocuments, searchQuery.trim() ? 300 : 0);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
@@ -133,10 +132,13 @@ const Search = () => {
         />
       </Paper>
 
-      {searchQuery && !loading && (
+      {!loading && results.length > 0 && (
         <Box>
           <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
-            {results.length} {results.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}
+            {searchQuery.trim()
+              ? `${results.length} ${results.length === 1 ? 'resultado encontrado' : 'resultados encontrados'}`
+              : `Mostrando todos los documentos (${results.length})`
+            }
           </Typography>
 
           {results.length > 0 ? (
@@ -215,14 +217,17 @@ const Search = () => {
         </Box>
       )}
 
-      {!searchQuery && !loading && (
+      {!loading && results.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <SearchIcon sx={{ fontSize: 64, color: '#e0e0e0', mb: 2 }} />
           <Typography variant="h6" color="textSecondary">
-            Escribe para comenzar a buscar
+            {searchQuery.trim() ? 'No se encontraron resultados' : 'No hay documentos'}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Busca documentos, espacios y contenido en toda la plataforma
+            {searchQuery.trim()
+              ? 'Intenta con otros términos de búsqueda'
+              : 'Crea algunos documentos para verlos aquí'
+            }
           </Typography>
         </Box>
       )}
