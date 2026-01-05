@@ -168,9 +168,10 @@ const Recent = () => {
                     <Description sx={{ color: '#667eea' }} />
                   </ListItemIcon>
                   <ListItemText
+                    disableTypography
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
                           {item.title}
                         </Typography>
                         {item.workspace_name && (
@@ -191,11 +192,11 @@ const Recent = () => {
                     }
                     secondary={
                       <Box>
-                        <Typography variant="body2" color="textSecondary" sx={{ display: 'inline' }}>
+                        <Typography variant="body2" component="span" color="textSecondary">
                           {getRelativeTime(item.updated_at)}
                         </Typography>
                         {item.last_modified_by_name && (
-                          <Typography variant="body2" color="textSecondary" sx={{ display: 'inline', ml: 1 }}>
+                          <Typography variant="body2" component="span" color="textSecondary" sx={{ ml: 1 }}>
                             • Por: {item.last_modified_by_name}
                           </Typography>
                         )}
