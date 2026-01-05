@@ -27,24 +27,18 @@ const Search = () => {
   // Buscar documentos cuando cambia el query
   useEffect(() => {
     const searchDocuments = async () => {
-      console.log('🔍 Iniciando búsqueda...');
       setLoading(true);
       setError(null);
       try {
         // Obtener todos los documentos
         const allDocs = await documentService.getAll();
-        console.log('📄 Respuesta completa:', allDocs);
-        console.log('📄 Tipo de respuesta:', typeof allDocs);
-        console.log('📄 Es array?:', Array.isArray(allDocs));
 
         // La API puede retornar un objeto con 'results' o directamente un array
         const documents = Array.isArray(allDocs) ? allDocs : (allDocs?.results || []);
-        console.log('📄 Documentos procesados:', documents.length);
 
         // Si no hay query, mostrar todos los documentos
         if (!searchQuery.trim()) {
           setResults(documents);
-          console.log('✅ Mostrando todos los documentos:', documents.length);
         } else {
           // Filtrar por título o contenido que contenga el query
           const filtered = documents.filter(doc => {
@@ -54,16 +48,13 @@ const Search = () => {
             return titleMatch || contentMatch;
           });
           setResults(filtered);
-          console.log('✅ Resultados filtrados:', filtered.length);
         }
       } catch (error) {
-        console.error('❌ Error buscando documentos:', error);
-        console.error('Error completo:', error.response || error);
+        console.error('Error buscando documentos:', error);
         setError(error.message || 'Error al cargar documentos');
         setResults([]);
       } finally {
         setLoading(false);
-        console.log('⏹️ Búsqueda finalizada');
       }
     };
 
