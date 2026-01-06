@@ -161,6 +161,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at']
 
+    def get_queryset(self):
+        """Filter documents by user's organization."""
+        queryset = super().get_queryset()
+        if self.request.user.organization:
+            # Filtrar documentos cuyo workspace pertenece a la organización del usuario
+            queryset = queryset.filter(workspace__organization=self.request.user.organization)
+        return queryset
+
     def perform_create(self, serializer):
         """Al crear un documento, asignar created_by y versión inicial."""
         document = serializer.save(
